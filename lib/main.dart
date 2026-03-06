@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
-import 'app.dart';
+import 'core/app_services.dart';
+import 'app.dart'; // o donde tengas tu MaterialApp/GoRouter
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await AppServices.I.init();
+
   runApp(App());
 }

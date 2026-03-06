@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/storage.dart';
-import '../../../core/http_client.dart';
+import '../../../core/app_services.dart';
 import '../data/activos_api.dart';
 import '../data/salida_api.dart';
 import '../data/salida_repository.dart';
@@ -16,7 +15,6 @@ class ActivosSalidaScreen extends StatefulWidget {
 
 class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
   late final SalidaRepository _repo;
-  bool _ready = false;
 
   bool _loadingList = false;
   String? _errorList;
@@ -35,28 +33,17 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
   @override
   void initState() {
     super.initState();
-    _bootstrap();
-  }
-
-  Future<void> _bootstrap() async {
-    final store = SecureStore();
-    final client = ApiClient(store: store);
-    await client.init();
+    final client = AppServices.I.client;
 
     _repo = SalidaRepository(
       activosApi: ActivosApi(client),
       salidaApi: SalidaApi(client),
     );
 
-    if (!mounted) return;
-    setState(() => _ready = true);
-
-    await _loadActivos();
+    _loadActivos();
   }
 
   Future<void> _loadActivos() async {
-    if (!_ready) return;
-
     setState(() {
       _loadingList = true;
       _errorList = null;
@@ -65,14 +52,10 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
     try {
       final items = await _repo.listarActivos();
       if (!mounted) return;
-      setState(() {
-        _activos = items;
-      });
+      setState(() => _activos = items);
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _errorList = 'No se pudo cargar activos: $e';
-      });
+      setState(() => _errorList = 'No se pudo cargar activos: $e');
     } finally {
       if (!mounted) return;
       setState(() => _loadingList = false);
@@ -105,8 +88,6 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
   }
 
   Future<void> _selectAndPreview(dynamic item) async {
-    if (!_ready) return;
-
     final idIngreso = _getIdIngreso(item);
     if (idIngreso == null) {
       setState(() {
@@ -128,14 +109,10 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
     try {
       final data = await _repo.preview(idIngreso);
       if (!mounted) return;
-      setState(() {
-        _preview = data;
-      });
+      setState(() => _preview = data);
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _errorPreview = 'Preview falló: $e';
-      });
+      setState(() => _errorPreview = 'Preview falló: $e');
     } finally {
       if (!mounted) return;
       setState(() => _loadingPreview = false);
@@ -143,8 +120,6 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
   }
 
   Future<void> _confirmSalida() async {
-    if (!_ready) return;
-
     final sel = _selected;
     if (sel == null) return;
     final idIngreso = _getIdIngreso(sel);
@@ -171,9 +146,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
       await _loadActivos();
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _errorConfirm = 'Confirmación falló: $e';
-      });
+      setState(() => _errorConfirm = 'Confirmación falló: $e');
     } finally {
       if (!mounted) return;
       setState(() => _confirming = false);
@@ -182,12 +155,6 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_ready) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     final sel = _selected;
     final preview = _preview;
 
@@ -242,8 +209,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                   final hora = _getHoraIngreso(item);
                   final id = _getIdIngreso(item)?.toString() ?? '?';
 
-                  final selected =
-                      (sel != null) && (_getIdIngreso(sel) == _getIdIngreso(item));
+                  final selected = (sel != null) && (_getIdIngreso(sel) == _getIdIngreso(item));
 
                   return ListTile(
                     selected: selected,
@@ -285,11 +251,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
               if (_loadingPreview) ...[
                 const Align(
                   alignment: Alignment.centerLeft,
-                  child: SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
+                  child: SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2)),
                 ),
                 const SizedBox(height: 6),
               ],
@@ -308,10 +270,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
 
               Row(
                 children: [
-                  Checkbox(
-                    value: _imprimirSunmi,
-                    onChanged: null,
-                  ),
+                  Checkbox(value: _imprimirSunmi, onChanged: null),
                   const Expanded(child: Text('Imprimir también en Sunmi (próximo paso)')),
                 ],
               ),
@@ -326,11 +285,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                 child: ElevatedButton(
                   onPressed: (_confirming || preview == null) ? null : _confirmSalida,
                   child: _confirming
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                      ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Text('Confirmar salida (imprime en PC)'),
                 ),
               ),
@@ -347,13 +302,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 90,
-            child: Text(
-              '$k:',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
+          SizedBox(width: 90, child: Text('$k:', style: const TextStyle(fontWeight: FontWeight.w600))),
           Expanded(child: Text(v)),
         ],
       ),

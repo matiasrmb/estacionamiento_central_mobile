@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/storage.dart';
-import '../../../core/http_client.dart';
+import '../../../core/app_services.dart';
 import '../data/ingreso_api.dart';
 import '../data/ingreso_repository.dart';
 
@@ -22,23 +21,12 @@ class _IngresoScreenState extends State<IngresoScreen> {
   Map<String, dynamic>? _result;
 
   late final IngresoRepository _repo;
-  bool _ready = false;
 
   @override
   void initState() {
     super.initState();
-    _bootstrap();
-  }
-
-  Future<void> _bootstrap() async {
-    final store = SecureStore();
-    final client = ApiClient(store: store);
-    await client.init();
-
+    final client = AppServices.I.client;
     _repo = IngresoRepository(api: IngresoApi(client));
-
-    if (!mounted) return;
-    setState(() => _ready = true);
   }
 
   @override
@@ -47,19 +35,14 @@ class _IngresoScreenState extends State<IngresoScreen> {
     super.dispose();
   }
 
-  String _normalizePatente(String s) {
-    return s.trim().toUpperCase().replaceAll(' ', '');
-  }
+  String _normalizePatente(String s) => s.trim().toUpperCase().replaceAll(' ', '');
 
   bool _patenteValidaBasica(String s) {
     if (s.length < 4 || s.length > 8) return false;
-    final ok = RegExp(r'^[A-Z0-9]+$').hasMatch(s);
-    return ok;
+    return RegExp(r'^[A-Z0-9]+$').hasMatch(s);
   }
 
   Future<void> _submit() async {
-    if (!_ready) return;
-
     setState(() {
       _error = null;
       _result = null;
@@ -72,10 +55,7 @@ class _IngresoScreenState extends State<IngresoScreen> {
       final data = await _repo.registrar(patente);
       if (!mounted) return;
 
-      setState(() {
-        _result = data;
-      });
-
+      setState(() => _result = data);
       _patenteCtrl.clear();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -83,9 +63,7 @@ class _IngresoScreenState extends State<IngresoScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _error = 'Ingreso falló: $e';
-      });
+      setState(() => _error = 'Ingreso falló: $e');
     } finally {
       if (!mounted) return;
       setState(() => _loading = false);
@@ -94,12 +72,6 @@ class _IngresoScreenState extends State<IngresoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_ready) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     final result = _result;
 
     return Scaffold(
@@ -136,7 +108,6 @@ class _IngresoScreenState extends State<IngresoScreen> {
               ),
             ),
             const SizedBox(height: 12),
-
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -156,7 +127,6 @@ class _IngresoScreenState extends State<IngresoScreen> {
                     : const Text('Registrar ingreso'),
               ),
             ),
-
             const SizedBox(height: 12),
 
             if (_error != null) ...[
@@ -168,19 +138,13 @@ class _IngresoScreenState extends State<IngresoScreen> {
               const Divider(),
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text(
-                  'Resultado',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                child: Text('Resultado', style: Theme.of(context).textTheme.titleMedium),
               ),
               const SizedBox(height: 8),
-
               _kv('id_ingreso', result['id_ingreso']?.toString() ?? ''),
               _kv('patente', result['patente']?.toString() ?? ''),
               _kv('hora_ingreso', result['hora_ingreso']?.toString() ?? ''),
-
-              if (result['print_jobs'] != null)
-                _kv('print_jobs', result['print_jobs'].toString()),
+              if (result['print_jobs'] != null) _kv('print_jobs', result['print_jobs'].toString()),
             ],
           ],
         ),
@@ -194,13 +158,7 @@ class _IngresoScreenState extends State<IngresoScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              '$k:',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
+          SizedBox(width: 120, child: Text('$k:', style: const TextStyle(fontWeight: FontWeight.w600))),
           Expanded(child: Text(v)),
         ],
       ),

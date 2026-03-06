@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/storage.dart';
 import '../../../core/config.dart';
+import '../../../core/app_services.dart';
 
 class ServerSettingsScreen extends StatefulWidget {
   const ServerSettingsScreen({super.key});
@@ -35,8 +36,6 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   }
 
   bool _isValidBaseUrl(String s) {
-    // MVP: exigimos http://IP:PUERTO/api/v1
-    // (Luego podemos permitir hostnames o https)
     return s.startsWith('http://') && s.endsWith('/api/v1') && s.contains(':');
   }
 
@@ -50,6 +49,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     }
 
     await _cfg.setApiBaseUrl(v);
+
+    // CLAVE: aplica el cambio al client vivo
+    await AppServices.I.reloadClient();
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -78,7 +80,6 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
-            // Si hay stack, pop. Si no, vuelve a /home.
             if (Navigator.of(context).canPop()) {
               context.pop();
             } else {
@@ -112,12 +113,6 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
                 onPressed: _save,
                 child: const Text('Guardar'),
               ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Tip: si cambia la IP del PC servidor, actualízala aquí.\n'
-              'Luego vuelve a Login/Ingreso/Activos para que ApiClient.init() la lea.',
-              style: TextStyle(fontSize: 12),
             ),
           ],
         ),

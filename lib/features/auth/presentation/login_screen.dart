@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/storage.dart';
-import '../../../core/http_client.dart';
+
+import '../../../core/app_services.dart';
 import '../data/auth_api.dart';
 import '../data/auth_repository.dart';
 
@@ -21,24 +21,13 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _error;
 
   late final AuthRepository _repo;
-  bool _ready = false;
 
   @override
   void initState() {
     super.initState();
-    _bootstrap();
-  }
-
-  Future<void> _bootstrap() async {
-    final store = SecureStore();
-    final client = ApiClient(store: store);
-
-    await client.init();
-
+    final client = AppServices.I.client;
+    final store = AppServices.I.store;
     _repo = AuthRepository(api: AuthApi(client), store: store);
-
-    if (!mounted) return;
-    setState(() => _ready = true);
   }
 
   @override
@@ -49,8 +38,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _doLogin() async {
-    if (!_ready) return;
-
     setState(() {
       _error = null;
       _loading = true;
@@ -58,7 +45,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       await _repo.login(_usuarioCtrl.text.trim(), _claveCtrl.text);
-
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -79,12 +65,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_ready) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
       appBar: AppBar(title: const Text('Login')),
       body: Padding(
@@ -96,7 +76,8 @@ class _LoginScreenState extends State<LoginScreen> {
               TextFormField(
                 controller: _usuarioCtrl,
                 decoration: const InputDecoration(labelText: 'Usuario'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Ingresa usuario' : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Ingresa usuario' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
