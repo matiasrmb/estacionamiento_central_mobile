@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../core/http_client.dart';
+import '../../../core/api_error.dart';
 
 class ActivosApi {
   final ApiClient client;
@@ -15,11 +16,9 @@ class ActivosApi {
       }
       if (data is List) return data;
 
-      throw Exception('Formato inesperado: $data');
+      throw ApiException('Formato inesperado de respuesta de activos.');
     } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      final body = e.response?.data;
-      throw Exception('HTTP $status - $body');
+      throw ApiErrorMapper.fromDio(e);
     }
   }
 }

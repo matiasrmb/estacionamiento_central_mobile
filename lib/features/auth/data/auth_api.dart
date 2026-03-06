@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../core/http_client.dart';
+import '../../../core/api_error.dart';
 
 class AuthApi {
   final ApiClient client;
@@ -16,10 +17,7 @@ class AuthApi {
       );
       return Map<String, dynamic>.from(res.data);
     } on DioException catch (e) {
-      // Esto da status code y body del backend
-      final status = e.response?.statusCode;
-      final data = e.response?.data;
-      throw Exception('HTTP $status - $data');
+      throw ApiErrorMapper.fromDio(e);
     }
   }
 }

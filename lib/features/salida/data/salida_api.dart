@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../core/http_client.dart';
+import '../../../core/api_error.dart';
 
 class SalidaApi {
   final ApiClient client;
@@ -13,9 +14,7 @@ class SalidaApi {
       );
       return Map<String, dynamic>.from(res.data);
     } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      final body = e.response?.data;
-      throw Exception('HTTP $status - $body');
+      throw ApiErrorMapper.fromDio(e);
     }
   }
 
@@ -26,13 +25,14 @@ class SalidaApi {
     try {
       final Response res = await client.dio.post(
         '/salidas/confirm',
-        data: {'id_ingreso': idIngreso, 'imprimir_sunmi': imprimirSunmi},
+        data: {
+          'id_ingreso': idIngreso,
+          'imprimir_sunmi': imprimirSunmi,
+        },
       );
       return Map<String, dynamic>.from(res.data);
     } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      final body = e.response?.data;
-      throw Exception('HTTP $status - $body');
+      throw ApiErrorMapper.fromDio(e);
     }
   }
 }

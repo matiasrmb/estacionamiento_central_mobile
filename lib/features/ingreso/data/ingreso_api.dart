@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../core/http_client.dart';
+import '../../../core/api_error.dart';
 
 class IngresoApi {
   final ApiClient client;
@@ -15,9 +16,7 @@ class IngresoApi {
       );
       return Map<String, dynamic>.from(res.data);
     } on DioException catch (e) {
-      final status = e.response?.statusCode;
-      final data = e.response?.data;
-      throw Exception('HTTP $status - $data');
+      throw ApiErrorMapper.fromDio(e);
     }
   }
 }
