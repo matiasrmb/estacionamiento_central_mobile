@@ -22,13 +22,23 @@ class _IngresoScreenState extends State<IngresoScreen> {
   Map<String, dynamic>? _result;
 
   late final IngresoRepository _repo;
+  bool _ready = false;
 
   @override
   void initState() {
     super.initState();
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
     final store = SecureStore();
     final client = ApiClient(store: store);
+    await client.init();
+
     _repo = IngresoRepository(api: IngresoApi(client));
+
+    if (!mounted) return;
+    setState(() => _ready = true);
   }
 
   @override
@@ -42,13 +52,14 @@ class _IngresoScreenState extends State<IngresoScreen> {
   }
 
   bool _patenteValidaBasica(String s) {
-    // Validación MVP: largo mínimo 4, máximo 8, alfanumérico
     if (s.length < 4 || s.length > 8) return false;
     final ok = RegExp(r'^[A-Z0-9]+$').hasMatch(s);
     return ok;
   }
 
   Future<void> _submit() async {
+    if (!_ready) return;
+
     setState(() {
       _error = null;
       _result = null;
@@ -65,23 +76,30 @@ class _IngresoScreenState extends State<IngresoScreen> {
         _result = data;
       });
 
-      // Limpieza para siguiente ingreso (opcional)
       _patenteCtrl.clear();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ingreso registrado')),
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = 'Ingreso falló: $e';
       });
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (!mounted) return;
+      setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!_ready) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final result = _result;
 
     return Scaffold(
@@ -161,8 +179,8 @@ class _IngresoScreenState extends State<IngresoScreen> {
               _kv('patente', result['patente']?.toString() ?? ''),
               _kv('hora_ingreso', result['hora_ingreso']?.toString() ?? ''),
 
-              // Si el backend retorna info de impresión/print_jobs, la mostramos
-              if (result['print_jobs'] != null) _kv('print_jobs', result['print_jobs'].toString()),
+              if (result['print_jobs'] != null)
+                _kv('print_jobs', result['print_jobs'].toString()),
             ],
           ],
         ),
@@ -176,7 +194,13 @@ class _IngresoScreenState extends State<IngresoScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 120, child: Text('$k:', style: const TextStyle(fontWeight: FontWeight.w600))),
+          SizedBox(
+            width: 120,
+            child: Text(
+              '$k:',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
           Expanded(child: Text(v)),
         ],
       ),

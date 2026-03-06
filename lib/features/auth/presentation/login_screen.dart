@@ -21,13 +21,24 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _error;
 
   late final AuthRepository _repo;
+  bool _ready = false;
 
   @override
   void initState() {
     super.initState();
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
     final store = SecureStore();
     final client = ApiClient(store: store);
+
+    await client.init();
+
     _repo = AuthRepository(api: AuthApi(client), store: store);
+
+    if (!mounted) return;
+    setState(() => _ready = true);
   }
 
   @override
@@ -38,6 +49,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _doLogin() async {
+    if (!_ready) return;
+
     setState(() {
       _error = null;
       _loading = true;
@@ -45,23 +58,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       await _repo.login(_usuarioCtrl.text.trim(), _claveCtrl.text);
+
       if (!mounted) return;
-      context.go('/home');
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Login OK')),
       );
+
+      context.go('/home');
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = 'Login falló: $e';
       });
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (!mounted) return;
+      setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!_ready) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Login')),
       body: Padding(
