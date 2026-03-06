@@ -43,10 +43,15 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('Estacionamiento Central'),
         actions: [
           IconButton(
+            onPressed: () => context.push('/settings'),
+            icon: const Icon(Icons.settings),
+            tooltip: 'Servidor (LAN)',
+          ),
+          IconButton(
             onPressed: _logout,
             icon: const Icon(Icons.logout),
             tooltip: 'Cerrar sesión',
-          )
+          ),
         ],
       ),
       body: Padding(

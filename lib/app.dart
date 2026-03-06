@@ -5,6 +5,7 @@ import 'features/salida/presentation/activos_salida_screen.dart';
 import 'features/bootstrap/presentation/bootstrap_screen.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/home/presentation/home_screen.dart';
+import 'features/settings/presentation/server_settings_screen.dart';
 import 'ui/theme.dart';
 
 class PlaceholderScreen extends StatelessWidget {
@@ -30,6 +31,7 @@ class App extends StatelessWidget {
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/ingreso', builder: (context, state) => const IngresoScreen()),
       GoRoute(path: '/activos', builder: (context, state) => const ActivosSalidaScreen()),
+      GoRoute(path: '/settings', builder: (context, state) => const ServerSettingsScreen()),
     ],
   );
 
