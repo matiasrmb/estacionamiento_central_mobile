@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
 import '../../../core/app_services.dart';
 import '../data/activos_api.dart';
 import '../data/salida_api.dart';
 import '../data/salida_repository.dart';
+import '../../printing/sunmi_printer_service.dart';
+import '../../printing/ticket_formatter.dart';
 
 class ActivosSalidaScreen extends StatefulWidget {
   const ActivosSalidaScreen({super.key});
@@ -15,6 +16,7 @@ class ActivosSalidaScreen extends StatefulWidget {
 
 class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
   late final SalidaRepository _repo;
+  final SunmiPrinterService _sunmi = SunmiPrinterService();
 
   bool _loadingList = false;
   String? _errorList;
@@ -33,14 +35,19 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
   @override
   void initState() {
     super.initState();
-    final client = AppServices.I.client;
 
+    final client = AppServices.I.client;
     _repo = SalidaRepository(
       activosApi: ActivosApi(client),
       salidaApi: SalidaApi(client),
     );
 
-    _loadActivos();
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    await _sunmi.init();
+    await _loadActivos();
   }
 
   Future<void> _loadActivos() async {
@@ -122,6 +129,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
   Future<void> _confirmSalida() async {
     final sel = _selected;
     if (sel == null) return;
+
     final idIngreso = _getIdIngreso(sel);
     if (idIngreso == null) return;
 
@@ -131,7 +139,29 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
     });
 
     try {
-      await _repo.confirmar(idIngreso, imprimirSunmi: _imprimirSunmi);
+      final confirm = await _repo.confirmar(
+        idIngreso,
+        imprimirSunmi: _imprimirSunmi,
+      );
+
+      if (_imprimirSunmi) {
+        try {
+          final patente = _getPatente(sel);
+          final lines = TicketFormatter.salidaFromConfirmResponse(
+            patente: patente,
+            confirm: confirm,
+            previewFallback: _preview,
+          );
+          await _sunmi.printLines(lines);
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Salida OK, pero Sunmi falló: $e')),
+            );
+          }
+        }
+      }
+
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -170,7 +200,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
             onPressed: _loadingList ? null : _loadActivos,
             icon: const Icon(Icons.refresh),
             tooltip: 'Refrescar',
-          )
+          ),
         ],
       ),
       body: Padding(
@@ -198,7 +228,6 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
               Text(_errorList!, style: const TextStyle(color: Colors.red)),
             ],
             const SizedBox(height: 8),
-
             Expanded(
               child: ListView.separated(
                 itemCount: _activos.length,
@@ -209,7 +238,8 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                   final hora = _getHoraIngreso(item);
                   final id = _getIdIngreso(item)?.toString() ?? '?';
 
-                  final selected = (sel != null) && (_getIdIngreso(sel) == _getIdIngreso(item));
+                  final selected =
+                      (sel != null) && (_getIdIngreso(sel) == _getIdIngreso(item));
 
                   return ListTile(
                     selected: selected,
@@ -220,9 +250,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                 },
               ),
             ),
-
             const Divider(),
-
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
@@ -231,7 +259,6 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
               ),
             ),
             const SizedBox(height: 8),
-
             if (sel == null) ...[
               const Align(
                 alignment: Alignment.centerLeft,
@@ -247,45 +274,54 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-
               if (_loadingPreview) ...[
                 const Align(
                   alignment: Alignment.centerLeft,
-                  child: SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                  child: SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
                 ),
                 const SizedBox(height: 6),
               ],
-
               if (_errorPreview != null) ...[
                 Text(_errorPreview!, style: const TextStyle(color: Colors.red)),
                 const SizedBox(height: 6),
               ],
-
               if (preview != null) ...[
                 _kv('minutos', (preview['minutos'] ?? '').toString()),
                 _kv('monto', (preview['monto'] ?? '').toString()),
                 _kv('detalle', (preview['detalle'] ?? '').toString()),
                 const SizedBox(height: 8),
               ],
-
               Row(
                 children: [
-                  Checkbox(value: _imprimirSunmi, onChanged: null),
-                  const Expanded(child: Text('Imprimir también en Sunmi (próximo paso)')),
+                  Checkbox(
+                    value: _imprimirSunmi,
+                    onChanged: (v) {
+                      setState(() => _imprimirSunmi = v ?? false);
+                    },
+                  ),
+                  const Expanded(
+                    child: Text('Imprimir también en Sunmi (próximo paso)'),
+                  ),
                 ],
               ),
-
               if (_errorConfirm != null) ...[
                 Text(_errorConfirm!, style: const TextStyle(color: Colors.red)),
                 const SizedBox(height: 6),
               ],
-
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: (_confirming || preview == null) ? null : _confirmSalida,
                   child: _confirming
-                      ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Text('Confirmar salida (imprime en PC)'),
                 ),
               ),
@@ -302,7 +338,13 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 90, child: Text('$k:', style: const TextStyle(fontWeight: FontWeight.w600))),
+          SizedBox(
+            width: 90,
+            child: Text(
+              '$k:',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
           Expanded(child: Text(v)),
         ],
       ),
