@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/app_services.dart';
 import '../data/ingreso_api.dart';
 import '../data/ingreso_repository.dart';
+import '../../printing/sunmi_printer_service.dart';
+import '../../printing/ticket_formatter.dart';
 
 class IngresoScreen extends StatefulWidget {
   const IngresoScreen({super.key});
@@ -21,12 +23,23 @@ class _IngresoScreenState extends State<IngresoScreen> {
   Map<String, dynamic>? _result;
 
   late final IngresoRepository _repo;
+  final SunmiPrinterService _sunmi = SunmiPrinterService();
+  bool _sunmiAvailable = false;
 
   @override
   void initState() {
     super.initState();
     final client = AppServices.I.client;
     _repo = IngresoRepository(api: IngresoApi(client));
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    await _sunmi.init();
+    if (!mounted) return;
+    setState(() {
+      _sunmiAvailable = _sunmi.isReady;
+    });
   }
 
   @override
@@ -58,6 +71,23 @@ class _IngresoScreenState extends State<IngresoScreen> {
       setState(() => _result = data);
       _patenteCtrl.clear();
 
+      // Si este dispositivo tiene impresora Sunmi disponible, imprimir automático
+      if (_sunmiAvailable) {
+        try {
+          final lines = TicketFormatter.ingresoFromResponse(
+            patente: patente,
+            response: data,
+          );
+          await _sunmi.printLines(lines);
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Ingreso OK, pero Sunmi falló: $e')),
+          );
+        }
+      }
+
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Ingreso registrado')),
       );
@@ -128,23 +158,26 @@ class _IngresoScreenState extends State<IngresoScreen> {
               ),
             ),
             const SizedBox(height: 12),
-
             if (_error != null) ...[
               Text(_error!, style: const TextStyle(color: Colors.red)),
               const SizedBox(height: 8),
             ],
-
             if (result != null) ...[
               const Divider(),
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Resultado', style: Theme.of(context).textTheme.titleMedium),
+                child: Text(
+                  'Resultado',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ),
               const SizedBox(height: 8),
               _kv('id_ingreso', result['id_ingreso']?.toString() ?? ''),
               _kv('patente', result['patente']?.toString() ?? ''),
               _kv('hora_ingreso', result['hora_ingreso']?.toString() ?? ''),
-              if (result['print_jobs'] != null) _kv('print_jobs', result['print_jobs'].toString()),
+              if (result['print_jobs'] != null)
+                _kv('print_jobs', result['print_jobs'].toString()),
+              _kv('sunmi_disponible', _sunmiAvailable ? 'Sí' : 'No'),
             ],
           ],
         ),
@@ -158,7 +191,13 @@ class _IngresoScreenState extends State<IngresoScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 120, child: Text('$k:', style: const TextStyle(fontWeight: FontWeight.w600))),
+          SizedBox(
+            width: 120,
+            child: Text(
+              '$k:',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
           Expanded(child: Text(v)),
         ],
       ),

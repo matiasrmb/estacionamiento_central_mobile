@@ -30,6 +30,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
   bool _confirming = false;
   String? _errorConfirm;
 
+  bool _sunmiAvailable = false;
   bool _imprimirSunmi = false;
 
   @override
@@ -47,6 +48,13 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
 
   Future<void> _bootstrap() async {
     await _sunmi.init();
+
+    if (!mounted) return;
+    setState(() {
+      _sunmiAvailable = _sunmi.isReady;
+      _imprimirSunmi = _sunmiAvailable; // automático si es Sunmi
+    });
+
     await _loadActivos();
   }
 
@@ -144,7 +152,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
         imprimirSunmi: _imprimirSunmi,
       );
 
-      if (_imprimirSunmi) {
+      if (_imprimirSunmi && _sunmiAvailable) {
         try {
           final patente = _getPatente(sel);
           final lines = TicketFormatter.salidaFromConfirmResponse(
@@ -295,19 +303,20 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                 _kv('detalle', (preview['detalle'] ?? '').toString()),
                 const SizedBox(height: 8),
               ],
-              Row(
-                children: [
-                  Checkbox(
-                    value: _imprimirSunmi,
-                    onChanged: (v) {
-                      setState(() => _imprimirSunmi = v ?? false);
-                    },
-                  ),
-                  const Expanded(
-                    child: Text('Imprimir también en Sunmi (próximo paso)'),
-                  ),
-                ],
-              ),
+              if (_sunmiAvailable)
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _imprimirSunmi,
+                      onChanged: (v) {
+                        setState(() => _imprimirSunmi = v ?? false);
+                      },
+                    ),
+                    const Expanded(
+                      child: Text('Imprimir también en Sunmi'),
+                    ),
+                  ],
+                ),
               if (_errorConfirm != null) ...[
                 Text(_errorConfirm!, style: const TextStyle(color: Colors.red)),
                 const SizedBox(height: 6),

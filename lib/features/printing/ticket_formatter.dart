@@ -1,7 +1,19 @@
-/// Genera el ticket texto desde datos que ya tienes.
-/// MVP: usamos lo que venga del backend en confirm/preview.
-/// Si backend no trae "ticket_text", armamos básico con patente/minutos/monto.
 class TicketFormatter {
+  static List<String> ingresoFromResponse({
+    required String patente,
+    required Map<String, dynamic> response,
+  }) {
+    final horaIngreso = (response['hora_ingreso'] ?? '').toString();
+
+    return [
+      'TIPO: INGRESO',
+      'PATENTE: $patente',
+      'HORA INGRESO: $horaIngreso',
+      '------------------------',
+      'Bienvenido.',
+    ];
+  }
+
   static List<String> salidaFromPreview({
     required String patente,
     required Map<String, dynamic> preview,
@@ -26,8 +38,6 @@ class TicketFormatter {
     required Map<String, dynamic> confirm,
     Map<String, dynamic>? previewFallback,
   }) {
-    // Si en el futuro el backend devuelve un texto canonical:
-    // confirm['ticket_text'] como List<String> o confirm['ticket_text'] como String
     final t = confirm['ticket_text'];
 
     if (t is List) {
@@ -37,7 +47,6 @@ class TicketFormatter {
       return t.split('\n');
     }
 
-    // Fallback MVP
     if (previewFallback != null) {
       return salidaFromPreview(patente: patente, preview: previewFallback);
     }
