@@ -4,7 +4,7 @@ class AppConfig {
   // Default conservador (si no existe aún en SecureStore)
   // Puedes dejar aquí tu IP de “desarrollo” como fallback.
   // Server desarrollo : 192.168.1.13
-  static const String defaultApiBaseUrl = 'http://192.168.100.1:8000/api/v1';
+  static const String defaultApiBaseUrl = 'http://192.168.100.28:8000/api/v1';
 
   // Timeouts (los mantienes igual)
   static const Duration connectTimeout = Duration(seconds: 5);
