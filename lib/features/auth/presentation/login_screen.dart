@@ -58,8 +58,9 @@ class _LoginScreenState extends State<LoginScreen> {
         _error = 'Login falló: $e';
       });
     } finally {
-      if (!mounted) return;
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 

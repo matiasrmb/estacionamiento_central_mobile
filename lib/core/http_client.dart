@@ -23,29 +23,7 @@ class ApiClient {
           }
           options.headers['Accept'] = 'application/json';
 
-          // DEBUG
-          // ignore: avoid_print
-          print('HTTP -> ${options.method} ${options.uri}');
-          // ignore: avoid_print
-          print('Headers: ${options.headers}');
-          // ignore: avoid_print
-          print('Body: ${options.data}');
-
           return handler.next(options);
-        },
-        onResponse: (response, handler) {
-          // ignore: avoid_print
-          print('HTTP <- ${response.statusCode} ${response.requestOptions.uri}');
-          // ignore: avoid_print
-          print('Resp: ${response.data}');
-          return handler.next(response);
-        },
-        onError: (e, handler) {
-          // ignore: avoid_print
-          print('HTTP !! ${e.response?.statusCode} ${e.requestOptions.uri}');
-          // ignore: avoid_print
-          print('Err: ${e.response?.data}');
-          return handler.next(e);
         },
       ),
     );
@@ -57,9 +35,5 @@ class ApiClient {
     final baseUrl = await cfg.getApiBaseUrl();
 
     dio.options.baseUrl = baseUrl;
-
-    // DEBUG
-    // ignore: avoid_print
-    print('API baseUrl = ${dio.options.baseUrl}');
   }
 }

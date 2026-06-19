@@ -1,5 +1,3 @@
-import '../../../core/storage.dart';
-import '../../../core/http_client.dart';
 import 'ingreso_api.dart';
 
 class IngresoRepository {

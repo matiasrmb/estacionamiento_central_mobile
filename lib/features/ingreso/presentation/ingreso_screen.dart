@@ -95,8 +95,9 @@ class _IngresoScreenState extends State<IngresoScreen> {
       if (!mounted) return;
       setState(() => _error = 'Ingreso falló: $e');
     } finally {
-      if (!mounted) return;
-      setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 

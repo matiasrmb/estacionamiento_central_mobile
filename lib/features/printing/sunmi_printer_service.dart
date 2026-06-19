@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
 
 class SunmiPrinterService {
@@ -11,24 +12,36 @@ class SunmiPrinterService {
   String? _lastError;
   String? get lastError => _lastError;
 
+  bool _isMissingSunmiPrinter(Object error) {
+    final message = error.toString().toLowerCase();
+    return message.contains('sunmiprinter') ||
+        message.contains('sunmi printer') ||
+        message.contains('lateinit property sunmiprinter') ||
+        message.contains('not been initialized');
+  }
+
   Future<void> init() async {
     if (!_isAndroid) {
       _ready = false;
-      _lastError = 'No es Android.';
+      _lastError = 'La impresión Sunmi solo está disponible en equipos Android Sunmi.';
       debugPrint('SUNMI init -> $_lastError');
       return;
     }
 
     try {
-      debugPrint('SUNMI init -> bindingPrinter()');
-      await SunmiPrinter.bindingPrinter();
-
-      debugPrint('SUNMI init -> initPrinter()');
-      await SunmiPrinter.initPrinter();
+      debugPrint('SUNMI init -> getStatus()');
+      await SunmiConfig.getStatus();
 
       _ready = true;
       _lastError = null;
       debugPrint('SUNMI init -> OK');
+    } on PlatformException catch (e, st) {
+      _ready = false;
+      _lastError = _isMissingSunmiPrinter(e)
+          ? 'Este dispositivo no tiene impresora Sunmi integrada.'
+          : e.message ?? e.toString();
+      debugPrint('SUNMI init -> ERROR: $_lastError');
+      debugPrint('$st');
     } catch (e, st) {
       _ready = false;
       _lastError = e.toString();
@@ -39,7 +52,7 @@ class SunmiPrinterService {
 
   Future<void> printLines(List<String> lines) async {
     if (!_isAndroid) {
-      throw Exception('SunmiPrinterService: no es Android.');
+      throw Exception('La impresión Sunmi solo está disponible en equipos Android Sunmi.');
     }
 
     if (!_ready) {
@@ -82,7 +95,10 @@ class SunmiPrinterService {
 
       debugPrint('SUNMI print -> OK');
     } catch (e, st) {
-      _lastError = e.toString();
+      _ready = !_isMissingSunmiPrinter(e);
+      _lastError = _isMissingSunmiPrinter(e)
+          ? 'Este dispositivo no tiene impresora Sunmi integrada.'
+          : e.toString();
       debugPrint('SUNMI print -> ERROR: $e');
       debugPrint('$st');
       rethrow;

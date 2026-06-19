@@ -72,8 +72,9 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
       if (!mounted) return;
       setState(() => _errorList = 'No se pudo cargar activos: $e');
     } finally {
-      if (!mounted) return;
-      setState(() => _loadingList = false);
+      if (mounted) {
+        setState(() => _loadingList = false);
+      }
     }
   }
 
@@ -129,8 +130,9 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
       if (!mounted) return;
       setState(() => _errorPreview = 'Preview falló: $e');
     } finally {
-      if (!mounted) return;
-      setState(() => _loadingPreview = false);
+      if (mounted) {
+        setState(() => _loadingPreview = false);
+      }
     }
   }
 
@@ -186,8 +188,9 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
       if (!mounted) return;
       setState(() => _errorConfirm = 'Confirmación falló: $e');
     } finally {
-      if (!mounted) return;
-      setState(() => _confirming = false);
+      if (mounted) {
+        setState(() => _confirming = false);
+      }
     }
   }
 
@@ -239,7 +242,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
             Expanded(
               child: ListView.separated(
                 itemCount: _activos.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
+                separatorBuilder: (context, index) => const Divider(height: 1),
                 itemBuilder: (context, i) {
                   final item = _activos[i];
                   final patente = _getPatente(item);

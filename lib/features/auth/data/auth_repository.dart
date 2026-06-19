@@ -1,5 +1,4 @@
 import '../../../core/storage.dart';
-import '../../../core/http_client.dart';
 import 'auth_api.dart';
 
 class AuthRepository {
