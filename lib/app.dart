@@ -32,6 +32,13 @@ class App extends StatelessWidget {
       GoRoute(path: '/ingreso', builder: (context, state) => const IngresoScreen()),
       GoRoute(path: '/activos', builder: (context, state) => const ActivosSalidaScreen()),
       GoRoute(path: '/settings', builder: (context, state) => const ServerSettingsScreen()),
+      GoRoute(path: '/admin/reportes', builder: (context, state) => const PlaceholderScreen(title: 'Reportes')),
+      GoRoute(path: '/admin/configuracion', builder: (context, state) => const PlaceholderScreen(title: 'Configuración')),
+      GoRoute(path: '/admin/tarifas', builder: (context, state) => const PlaceholderScreen(title: 'Tarifas')),
+      GoRoute(path: '/admin/mensuales', builder: (context, state) => const PlaceholderScreen(title: 'Mensuales')),
+      GoRoute(path: '/admin/usuarios', builder: (context, state) => const PlaceholderScreen(title: 'Usuarios')),
+      GoRoute(path: '/admin/asistencias', builder: (context, state) => const PlaceholderScreen(title: 'Asistencias')),
+      GoRoute(path: '/admin/cierres', builder: (context, state) => const PlaceholderScreen(title: 'Cierres')),
     ],
   );
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/roles.dart';
 import '../../../core/storage.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -38,6 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isAdmin = AppRoles.isAdmin(_role);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Estacionamiento Central'),
@@ -64,28 +67,61 @@ class _HomeScreenState extends State<HomeScreen> {
             Text('Rol: $_role'),
             const SizedBox(height: 24),
 
-            // MVP: botones placeholder (en el siguiente paso los implementamos)
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => context.go('/ingreso'),
-                child: const Text('Ingreso (MVP)'),
-              ),
+            _HomeActionButton(
+              label: 'Ingreso',
+              icon: Icons.login,
+              onPressed: () => context.go('/ingreso'),
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => context.go('/activos'),
-                child: const Text('Activos / Salida (MVP)'),
-              ),
+            _HomeActionButton(
+              label: 'Activos / Salida',
+              icon: Icons.logout,
+              onPressed: () => context.go('/activos'),
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Nota: estos módulos se implementan en el próximo paso.',
-            ),
+            if (isAdmin) ...[
+              const SizedBox(height: 24),
+              Text('Administración', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 12),
+              _HomeActionButton(label: 'Reportes', icon: Icons.assessment, onPressed: () => context.go('/admin/reportes')),
+              const SizedBox(height: 12),
+              _HomeActionButton(label: 'Configuración', icon: Icons.settings, onPressed: () => context.go('/admin/configuracion')),
+              const SizedBox(height: 12),
+              _HomeActionButton(label: 'Tarifas', icon: Icons.payments, onPressed: () => context.go('/admin/tarifas')),
+              const SizedBox(height: 12),
+              _HomeActionButton(label: 'Mensuales', icon: Icons.calendar_month, onPressed: () => context.go('/admin/mensuales')),
+              const SizedBox(height: 12),
+              _HomeActionButton(label: 'Usuarios', icon: Icons.people, onPressed: () => context.go('/admin/usuarios')),
+              const SizedBox(height: 12),
+              _HomeActionButton(label: 'Asistencias', icon: Icons.badge, onPressed: () => context.go('/admin/asistencias')),
+              const SizedBox(height: 12),
+              _HomeActionButton(label: 'Cierres', icon: Icons.lock_clock, onPressed: () => context.go('/admin/cierres')),
+            ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _HomeActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  const _HomeActionButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icon),
+        label: Text(label),
       ),
     );
   }
