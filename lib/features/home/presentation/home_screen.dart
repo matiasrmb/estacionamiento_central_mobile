@@ -57,10 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      body: SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
           children: [
             Text('Usuario: $_user', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 4),
@@ -82,19 +81,47 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 24),
               Text('Administración', style: Theme.of(context).textTheme.titleMedium),
               const SizedBox(height: 12),
-              _HomeActionButton(label: 'Reportes', icon: Icons.assessment, onPressed: () => context.go('/admin/reportes')),
+              _HomeActionButton(
+                label: 'Reportes',
+                icon: Icons.assessment,
+                onPressed: () => context.go('/admin/reportes'),
+              ),
               const SizedBox(height: 12),
-              _HomeActionButton(label: 'Configuración', icon: Icons.settings, onPressed: () => context.go('/admin/configuracion')),
+              _HomeActionButton(
+                label: 'Configuración',
+                icon: Icons.settings,
+                onPressed: () => context.go('/admin/configuracion'),
+              ),
               const SizedBox(height: 12),
-              _HomeActionButton(label: 'Tarifas', icon: Icons.payments, onPressed: () => context.go('/admin/tarifas')),
+              _HomeActionButton(
+                label: 'Tarifas',
+                icon: Icons.payments,
+                onPressed: () => context.go('/admin/tarifas'),
+              ),
               const SizedBox(height: 12),
-              _HomeActionButton(label: 'Mensuales', icon: Icons.calendar_month, onPressed: () => context.go('/admin/mensuales')),
+              _HomeActionButton(
+                label: 'Mensuales',
+                icon: Icons.calendar_month,
+                onPressed: () => context.go('/admin/mensuales'),
+              ),
               const SizedBox(height: 12),
-              _HomeActionButton(label: 'Usuarios', icon: Icons.people, onPressed: () => context.go('/admin/usuarios')),
+              _HomeActionButton(
+                label: 'Usuarios',
+                icon: Icons.people,
+                onPressed: () => context.go('/admin/usuarios'),
+              ),
               const SizedBox(height: 12),
-              _HomeActionButton(label: 'Asistencias', icon: Icons.badge, onPressed: () => context.go('/admin/asistencias')),
+              _HomeActionButton(
+                label: 'Asistencias',
+                icon: Icons.badge,
+                onPressed: () => context.go('/admin/asistencias'),
+              ),
               const SizedBox(height: 12),
-              _HomeActionButton(label: 'Cierres', icon: Icons.lock_clock, onPressed: () => context.go('/admin/cierres')),
+              _HomeActionButton(
+                label: 'Cierres',
+                icon: Icons.lock_clock,
+                onPressed: () => context.go('/admin/cierres'),
+              ),
             ],
           ],
         ),
@@ -121,6 +148,11 @@ class _HomeActionButton extends StatelessWidget {
       child: ElevatedButton.icon(
         onPressed: onPressed,
         icon: Icon(icon),
+        style: ElevatedButton.styleFrom(
+          alignment: Alignment.centerLeft,
+          minimumSize: const Size.fromHeight(52),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
         label: Text(label),
       ),
     );
