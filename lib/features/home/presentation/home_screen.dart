@@ -77,6 +77,12 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icons.logout,
               onPressed: () => context.go('/activos'),
             ),
+            const SizedBox(height: 12),
+            _HomeActionButton(
+              label: 'Lavados / Baño',
+              icon: Icons.local_car_wash,
+              onPressed: () => context.go('/operaciones'),
+            ),
             if (isAdmin) ...[
               const SizedBox(height: 24),
               Text('Administración', style: Theme.of(context).textTheme.titleMedium),

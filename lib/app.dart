@@ -5,6 +5,7 @@ import 'features/salida/presentation/activos_salida_screen.dart';
 import 'features/bootstrap/presentation/bootstrap_screen.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/home/presentation/home_screen.dart';
+import 'features/operaciones/presentation/operaciones_screen.dart';
 import 'features/settings/presentation/server_settings_screen.dart';
 import 'features/admin/configuracion/presentation/configuracion_admin_screen.dart';
 import 'features/admin/mensuales/presentation/mensuales_admin_screen.dart';
@@ -34,6 +35,7 @@ class App extends StatelessWidget {
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/ingreso', builder: (context, state) => const IngresoScreen()),
       GoRoute(path: '/activos', builder: (context, state) => const ActivosSalidaScreen()),
+      GoRoute(path: '/operaciones', builder: (context, state) => const OperacionesScreen()),
       GoRoute(path: '/settings', builder: (context, state) => const ServerSettingsScreen()),
       GoRoute(path: '/admin/reportes', builder: (context, state) => const PlaceholderScreen(title: 'Reportes')),
       GoRoute(path: '/admin/configuracion', builder: (context, state) => const ConfiguracionAdminScreen()),

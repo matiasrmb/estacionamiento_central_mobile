@@ -103,7 +103,25 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
     return '';
   }
 
+  bool _isEnLavado(dynamic item) {
+    if (item is Map) {
+      final v = item['en_lavado'];
+      return v == true || v == 1 || v == '1';
+    }
+    return false;
+  }
+
   Future<void> _selectAndPreview(dynamic item) async {
+    if (_isEnLavado(item)) {
+      setState(() {
+        _selected = Map<String, dynamic>.from(item as Map);
+        _preview = null;
+        _errorPreview = 'Este vehículo está en lavado. Finalizá el lavado antes de registrar la salida.';
+        _errorConfirm = null;
+      });
+      return;
+    }
+
     final idIngreso = _getIdIngreso(item);
     if (idIngreso == null) {
       setState(() {
@@ -248,6 +266,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                   final patente = _getPatente(item);
                   final hora = _getHoraIngreso(item);
                   final id = _getIdIngreso(item)?.toString() ?? '?';
+                  final enLavado = _isEnLavado(item);
 
                   final selected =
                       (sel != null) && (_getIdIngreso(sel) == _getIdIngreso(item));
@@ -255,7 +274,12 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                   return ListTile(
                     selected: selected,
                     title: Text(patente.isEmpty ? '(sin patente)' : patente),
-                    subtitle: Text('id_ingreso: $id  •  ingreso: $hora'),
+                    subtitle: Text(
+                      enLavado
+                          ? 'id_ingreso: $id  •  ingreso: $hora  •  EN LAVADO'
+                          : 'id_ingreso: $id  •  ingreso: $hora',
+                    ),
+                    trailing: enLavado ? const Icon(Icons.local_car_wash) : null,
                     onTap: () => _selectAndPreview(item),
                   );
                 },
