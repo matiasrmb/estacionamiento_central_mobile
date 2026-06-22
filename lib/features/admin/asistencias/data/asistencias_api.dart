@@ -30,6 +30,22 @@ class AsistenciasApi {
     }
   }
 
+  Future<int> cerrarActivas({String usuario = ''}) async {
+    try {
+      final Response res = await client.dio.post(
+        '/asistencias/cerrar-activas',
+        queryParameters: {
+          if (usuario.trim().isNotEmpty) 'usuario': usuario.trim(),
+        },
+      );
+      final data = res.data;
+      if (data is Map) return (data['cerradas'] as num?)?.toInt() ?? 0;
+      throw ApiException('Formato inesperado al cerrar asistencias.');
+    } on DioException catch (e) {
+      throw ApiErrorMapper.fromDio(e);
+    }
+  }
+
   String _date(DateTime value) {
     final year = value.year.toString().padLeft(4, '0');
     final month = value.month.toString().padLeft(2, '0');

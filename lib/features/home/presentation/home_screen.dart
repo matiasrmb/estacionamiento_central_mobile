@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/app_services.dart';
 import '../../../core/roles.dart';
 import '../../../core/storage.dart';
+import '../../auth/data/auth_api.dart';
+import '../../auth/data/auth_repository.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,12 +15,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final _store = SecureStore();
+  late final AuthRepository _authRepo;
   String _user = '';
   String _role = '';
 
   @override
   void initState() {
     super.initState();
+    _authRepo = AuthRepository(
+      api: AuthApi(AppServices.I.client),
+      store: _store,
+    );
     _loadSession();
   }
 
@@ -32,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _logout() async {
-    await _store.clear();
+    await _authRepo.logout();
     if (!mounted) return;
     context.go('/login');
   }
@@ -61,7 +69,10 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text('Usuario: $_user', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Usuario: $_user',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 4),
             Text('Rol: $_role'),
             const SizedBox(height: 24),
@@ -85,7 +96,10 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             if (isAdmin) ...[
               const SizedBox(height: 24),
-              Text('Administración', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Administración',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 12),
               _HomeActionButton(
                 label: 'Reportes',

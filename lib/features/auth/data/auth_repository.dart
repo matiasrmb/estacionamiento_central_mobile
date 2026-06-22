@@ -15,5 +15,11 @@ class AuthRepository {
     await store.saveSession(token: token, user: usuario, role: rol);
   }
 
-  Future<void> logout() => store.clear();
+  Future<void> logout() async {
+    try {
+      await api.logout();
+    } finally {
+      await store.clear();
+    }
+  }
 }

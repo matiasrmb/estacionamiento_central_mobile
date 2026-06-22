@@ -20,4 +20,12 @@ class AuthApi {
       throw ApiErrorMapper.fromDio(e);
     }
   }
+
+  Future<void> logout() async {
+    try {
+      await client.dio.post('/auth/logout');
+    } on DioException catch (e) {
+      throw ApiErrorMapper.fromDio(e);
+    }
+  }
 }

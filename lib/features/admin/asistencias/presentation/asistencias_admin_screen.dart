@@ -98,6 +98,46 @@ class _AsistenciasAdminScreenState extends State<AsistenciasAdminScreen> {
     _buscar();
   }
 
+  Future<void> _cerrarActivas() async {
+    final usuario = _usuarioCtrl.text.trim();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cerrar sesiones activas'),
+        content: Text(
+          usuario.isEmpty
+              ? 'Esto cerrará todas las sesiones activas hasta este momento. ¿Continuar?'
+              : 'Esto cerrará las sesiones activas de "$usuario" hasta este momento. ¿Continuar?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final cerradas = await _api.cerrarActivas(usuario: usuario);
+      await _buscar();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Sesiones cerradas: $cerradas')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudieron cerrar sesiones: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final reporte = _reporte;
@@ -175,6 +215,15 @@ class _AsistenciasAdminScreenState extends State<AsistenciasAdminScreen> {
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _loading ? null : _cerrarActivas,
+                      icon: const Icon(Icons.lock_clock),
+                      label: const Text('Cerrar sesiones activas'),
+                    ),
                   ),
                 ],
               ),
