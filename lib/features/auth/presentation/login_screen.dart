@@ -110,7 +110,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         )
                       : const Text('Entrar'),
                 ),
-              )
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _loading ? null : () => context.push('/settings'),
+                  icon: const Icon(Icons.wifi),
+                  label: const Text('Servidor (LAN)'),
+                ),
+              ),
             ],
           ),
         ),
