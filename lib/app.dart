@@ -12,6 +12,7 @@ import 'features/admin/cierres/presentation/cierres_admin_screen.dart';
 import 'features/admin/mensuales/presentation/mensuales_admin_screen.dart';
 import 'features/admin/reportes/presentation/reportes_admin_screen.dart';
 import 'features/admin/tarifas/presentation/tarifas_admin_screen.dart';
+import 'features/admin/usuarios/presentation/usuarios_admin_screen.dart';
 import 'ui/theme.dart';
 
 class PlaceholderScreen extends StatelessWidget {
@@ -71,7 +72,7 @@ class App extends StatelessWidget {
       ),
       GoRoute(
         path: '/admin/usuarios',
-        builder: (context, state) => const PlaceholderScreen(title: 'Usuarios'),
+        builder: (context, state) => const UsuariosAdminScreen(),
       ),
       GoRoute(
         path: '/admin/asistencias',
