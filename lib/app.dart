@@ -8,6 +8,7 @@ import 'features/home/presentation/home_screen.dart';
 import 'features/operaciones/presentation/operaciones_screen.dart';
 import 'features/settings/presentation/server_settings_screen.dart';
 import 'features/admin/configuracion/presentation/configuracion_admin_screen.dart';
+import 'features/admin/cierres/presentation/cierres_admin_screen.dart';
 import 'features/admin/mensuales/presentation/mensuales_admin_screen.dart';
 import 'features/admin/tarifas/presentation/tarifas_admin_screen.dart';
 import 'ui/theme.dart';
@@ -20,7 +21,9 @@ class PlaceholderScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(title)),
-      body: const Center(child: Text('Pendiente de implementar en el siguiente paso')),
+      body: const Center(
+        child: Text('Pendiente de implementar en el siguiente paso'),
+      ),
     );
   }
 }
@@ -33,17 +36,51 @@ class App extends StatelessWidget {
       GoRoute(path: '/', builder: (context, state) => const BootstrapScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
-      GoRoute(path: '/ingreso', builder: (context, state) => const IngresoScreen()),
-      GoRoute(path: '/activos', builder: (context, state) => const ActivosSalidaScreen()),
-      GoRoute(path: '/operaciones', builder: (context, state) => const OperacionesScreen()),
-      GoRoute(path: '/settings', builder: (context, state) => const ServerSettingsScreen()),
-      GoRoute(path: '/admin/reportes', builder: (context, state) => const PlaceholderScreen(title: 'Reportes')),
-      GoRoute(path: '/admin/configuracion', builder: (context, state) => const ConfiguracionAdminScreen()),
-      GoRoute(path: '/admin/tarifas', builder: (context, state) => const TarifasAdminScreen()),
-      GoRoute(path: '/admin/mensuales', builder: (context, state) => const MensualesAdminScreen()),
-      GoRoute(path: '/admin/usuarios', builder: (context, state) => const PlaceholderScreen(title: 'Usuarios')),
-      GoRoute(path: '/admin/asistencias', builder: (context, state) => const PlaceholderScreen(title: 'Asistencias')),
-      GoRoute(path: '/admin/cierres', builder: (context, state) => const PlaceholderScreen(title: 'Cierres')),
+      GoRoute(
+        path: '/ingreso',
+        builder: (context, state) => const IngresoScreen(),
+      ),
+      GoRoute(
+        path: '/activos',
+        builder: (context, state) => const ActivosSalidaScreen(),
+      ),
+      GoRoute(
+        path: '/operaciones',
+        builder: (context, state) => const OperacionesScreen(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const ServerSettingsScreen(),
+      ),
+      GoRoute(
+        path: '/admin/reportes',
+        builder: (context, state) => const PlaceholderScreen(title: 'Reportes'),
+      ),
+      GoRoute(
+        path: '/admin/configuracion',
+        builder: (context, state) => const ConfiguracionAdminScreen(),
+      ),
+      GoRoute(
+        path: '/admin/tarifas',
+        builder: (context, state) => const TarifasAdminScreen(),
+      ),
+      GoRoute(
+        path: '/admin/mensuales',
+        builder: (context, state) => const MensualesAdminScreen(),
+      ),
+      GoRoute(
+        path: '/admin/usuarios',
+        builder: (context, state) => const PlaceholderScreen(title: 'Usuarios'),
+      ),
+      GoRoute(
+        path: '/admin/asistencias',
+        builder: (context, state) =>
+            const PlaceholderScreen(title: 'Asistencias'),
+      ),
+      GoRoute(
+        path: '/admin/cierres',
+        builder: (context, state) => const CierresAdminScreen(),
+      ),
     ],
   );
 
