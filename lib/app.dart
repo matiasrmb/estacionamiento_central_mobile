@@ -7,6 +7,7 @@ import 'features/auth/presentation/login_screen.dart';
 import 'features/home/presentation/home_screen.dart';
 import 'features/settings/presentation/server_settings_screen.dart';
 import 'features/admin/configuracion/presentation/configuracion_admin_screen.dart';
+import 'features/admin/mensuales/presentation/mensuales_admin_screen.dart';
 import 'features/admin/tarifas/presentation/tarifas_admin_screen.dart';
 import 'ui/theme.dart';
 
@@ -37,7 +38,7 @@ class App extends StatelessWidget {
       GoRoute(path: '/admin/reportes', builder: (context, state) => const PlaceholderScreen(title: 'Reportes')),
       GoRoute(path: '/admin/configuracion', builder: (context, state) => const ConfiguracionAdminScreen()),
       GoRoute(path: '/admin/tarifas', builder: (context, state) => const TarifasAdminScreen()),
-      GoRoute(path: '/admin/mensuales', builder: (context, state) => const PlaceholderScreen(title: 'Mensuales')),
+      GoRoute(path: '/admin/mensuales', builder: (context, state) => const MensualesAdminScreen()),
       GoRoute(path: '/admin/usuarios', builder: (context, state) => const PlaceholderScreen(title: 'Usuarios')),
       GoRoute(path: '/admin/asistencias', builder: (context, state) => const PlaceholderScreen(title: 'Asistencias')),
       GoRoute(path: '/admin/cierres', builder: (context, state) => const PlaceholderScreen(title: 'Cierres')),
