@@ -10,6 +10,7 @@ import 'features/settings/presentation/server_settings_screen.dart';
 import 'features/admin/configuracion/presentation/configuracion_admin_screen.dart';
 import 'features/admin/cierres/presentation/cierres_admin_screen.dart';
 import 'features/admin/mensuales/presentation/mensuales_admin_screen.dart';
+import 'features/admin/reportes/presentation/reportes_admin_screen.dart';
 import 'features/admin/tarifas/presentation/tarifas_admin_screen.dart';
 import 'ui/theme.dart';
 
@@ -54,7 +55,7 @@ class App extends StatelessWidget {
       ),
       GoRoute(
         path: '/admin/reportes',
-        builder: (context, state) => const PlaceholderScreen(title: 'Reportes'),
+        builder: (context, state) => const ReportesAdminScreen(),
       ),
       GoRoute(
         path: '/admin/configuracion',
