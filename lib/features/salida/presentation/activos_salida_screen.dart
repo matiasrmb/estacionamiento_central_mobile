@@ -97,7 +97,8 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
 
   String _getHoraIngreso(dynamic item) {
     if (item is Map) {
-      final v = item['hora_ingreso'] ?? item['horaIngreso'] ?? item['ingreso_at'];
+      final v =
+          item['hora_ingreso'] ?? item['horaIngreso'] ?? item['ingreso_at'];
       return (v ?? '').toString();
     }
     return '';
@@ -116,7 +117,8 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
       setState(() {
         _selected = Map<String, dynamic>.from(item as Map);
         _preview = null;
-        _errorPreview = 'Este vehículo está en lavado. Finalizá el lavado antes de registrar la salida.';
+        _errorPreview =
+            'Este vehículo está en lavado. Finalizá el lavado antes de registrar la salida.';
         _errorConfirm = null;
       });
       return;
@@ -127,7 +129,8 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
       setState(() {
         _selected = null;
         _preview = null;
-        _errorPreview = 'El item no trae id_ingreso (revisa formato de /activos).';
+        _errorPreview =
+            'El item no trae id_ingreso (revisa formato de /activos).';
       });
       return;
     }
@@ -179,6 +182,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
             patente: patente,
             confirm: confirm,
             previewFallback: _preview,
+            horaIngreso: _getHoraIngreso(sel),
           );
           await _sunmi.printLines(lines);
         } catch (e) {
@@ -192,9 +196,9 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Salida confirmada')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Salida confirmada')));
 
       setState(() {
         _selected = null;
@@ -269,7 +273,8 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                   final enLavado = _isEnLavado(item);
 
                   final selected =
-                      (sel != null) && (_getIdIngreso(sel) == _getIdIngreso(item));
+                      (sel != null) &&
+                      (_getIdIngreso(sel) == _getIdIngreso(item));
 
                   return ListTile(
                     selected: selected,
@@ -279,7 +284,9 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                           ? 'id_ingreso: $id  •  ingreso: $hora  •  EN LAVADO'
                           : 'id_ingreso: $id  •  ingreso: $hora',
                     ),
-                    trailing: enLavado ? const Icon(Icons.local_car_wash) : null,
+                    trailing: enLavado
+                        ? const Icon(Icons.local_car_wash)
+                        : null,
                     onTap: () => _selectAndPreview(item),
                   );
                 },
@@ -297,7 +304,9 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
             if (sel == null) ...[
               const Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Selecciona un activo para ver el cálculo preliminar.'),
+                child: Text(
+                  'Selecciona un activo para ver el cálculo preliminar.',
+                ),
               ),
               const SizedBox(height: 8),
             ] else ...[
@@ -339,9 +348,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                         setState(() => _imprimirSunmi = v ?? false);
                       },
                     ),
-                    const Expanded(
-                      child: Text('Imprimir también en Sunmi'),
-                    ),
+                    const Expanded(child: Text('Imprimir también en Sunmi')),
                   ],
                 ),
               if (_errorConfirm != null) ...[
@@ -351,7 +358,9 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: (_confirming || preview == null) ? null : _confirmSalida,
+                  onPressed: (_confirming || preview == null)
+                      ? null
+                      : _confirmSalida,
                   child: _confirming
                       ? const SizedBox(
                           height: 18,

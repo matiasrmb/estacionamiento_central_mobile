@@ -18,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
 
   bool _loading = false;
+  bool _showPassword = false;
   String? _error;
 
   late final AuthRepository _repo;
@@ -47,9 +48,9 @@ class _LoginScreenState extends State<LoginScreen> {
       await _repo.login(_usuarioCtrl.text.trim(), _claveCtrl.text);
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Login OK')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Login OK')));
 
       context.go('/home');
     } catch (e) {
@@ -83,9 +84,19 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 12),
               TextFormField(
                 controller: _claveCtrl,
-                decoration: const InputDecoration(labelText: 'Clave'),
-                obscureText: true,
-                validator: (v) => (v == null || v.isEmpty) ? 'Ingresa clave' : null,
+                decoration: InputDecoration(
+                  labelText: 'Clave',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _showPassword ? Icons.visibility_off : Icons.visibility,
+                    ),
+                    onPressed: () =>
+                        setState(() => _showPassword = !_showPassword),
+                  ),
+                ),
+                obscureText: !_showPassword,
+                validator: (v) =>
+                    (v == null || v.isEmpty) ? 'Ingresa clave' : null,
               ),
               const SizedBox(height: 16),
               if (_error != null) ...[

@@ -23,7 +23,8 @@ class SunmiPrinterService {
   Future<void> init() async {
     if (!_isAndroid) {
       _ready = false;
-      _lastError = 'La impresión Sunmi solo está disponible en equipos Android Sunmi.';
+      _lastError =
+          'La impresión Sunmi solo está disponible en equipos Android Sunmi.';
       debugPrint('SUNMI init -> $_lastError');
       return;
     }
@@ -52,7 +53,9 @@ class SunmiPrinterService {
 
   Future<void> printLines(List<String> lines) async {
     if (!_isAndroid) {
-      throw Exception('La impresión Sunmi solo está disponible en equipos Android Sunmi.');
+      throw Exception(
+        'La impresión Sunmi solo está disponible en equipos Android Sunmi.',
+      );
     }
 
     if (!_ready) {
@@ -60,32 +63,31 @@ class SunmiPrinterService {
     }
 
     if (!_ready) {
-      throw Exception('No se pudo inicializar impresora Sunmi. ${_lastError ?? ""}');
+      throw Exception(
+        'No se pudo inicializar impresora Sunmi. ${_lastError ?? ""}',
+      );
     }
 
     try {
-      debugPrint('SUNMI print -> encabezado');
-      await SunmiPrinter.printText(
-        'ESTACIONAMIENTO CENTRAL',
-        style: SunmiTextStyle(
-          bold: true,
-          align: SunmiPrintAlign.CENTER,
-        ),
-      );
-
-      await SunmiPrinter.lineWrap(1);
-
       debugPrint('SUNMI print -> líneas: ${lines.length}');
       for (final line in lines) {
+        final isCentered =
+            line == 'ESTACIONAMIENTO CENTRAL' ||
+            line.startsWith('TICKET') ||
+            line.startsWith('TOTAL') ||
+            line.startsWith('Gracias');
+        final isBold = isCentered || line.startsWith('PATENTE');
         await SunmiPrinter.printText(
           line,
           style: SunmiTextStyle(
-            align: SunmiPrintAlign.LEFT,
+            fontSize: isCentered ? 30 : 28,
+            bold: isBold,
+            align: isCentered ? SunmiPrintAlign.CENTER : SunmiPrintAlign.LEFT,
           ),
         );
       }
 
-      await SunmiPrinter.lineWrap(2);
+      await SunmiPrinter.lineWrap(4);
 
       try {
         await SunmiPrinter.cutPaper();

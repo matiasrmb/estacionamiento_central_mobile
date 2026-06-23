@@ -1,35 +1,90 @@
 class TicketFormatter {
+  static const _separator = '------------------------';
+
+  static String _formatDateTime(dynamic value) {
+    final text = (value ?? '').toString().trim();
+    if (text.isEmpty) return '';
+
+    final parsed = DateTime.tryParse(text);
+    if (parsed == null) {
+      return text.split('.').first;
+    }
+
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(parsed.day)}-${two(parsed.month)}-${parsed.year} '
+        '${two(parsed.hour)}:${two(parsed.minute)}:${two(parsed.second)}';
+  }
+
   static List<String> ingresoFromResponse({
     required String patente,
     required Map<String, dynamic> response,
   }) {
-    final horaIngreso = (response['hora_ingreso'] ?? '').toString();
+    final ingreso = response['ingreso'];
+    final horaIngreso = _formatDateTime(
+      ingreso is Map ? ingreso['hora_ingreso'] : response['hora_ingreso'],
+    );
 
     return [
-      'TIPO: INGRESO',
+      'ESTACIONAMIENTO CENTRAL',
+      _separator,
+      'TICKET DE INGRESO',
       'PATENTE: $patente',
-      'HORA INGRESO: $horaIngreso',
-      '------------------------',
-      'Bienvenido.',
+      if (horaIngreso.isNotEmpty) 'INGRESO: $horaIngreso',
+      _separator,
+      'Gracias por su visita.',
     ];
   }
 
   static List<String> salidaFromPreview({
     required String patente,
     required Map<String, dynamic> preview,
+    String? horaIngreso,
   }) {
-    final minutos = (preview['minutos'] ?? '').toString();
-    final monto = (preview['monto'] ?? '').toString();
-    final detalle = (preview['detalle'] ?? '').toString();
+    return _salidaLines(
+      patente: patente,
+      horaIngreso: horaIngreso,
+      horaSalida: null,
+      minutos: preview['minutos'],
+      monto: preview['monto'],
+      detalle: preview['detalle'],
+      montoEstacionamiento: preview['monto_estacionamiento'],
+      totalLavados: preview['total_lavados'],
+    );
+  }
+
+  static List<String> _salidaLines({
+    required String patente,
+    required dynamic horaIngreso,
+    required dynamic horaSalida,
+    required dynamic minutos,
+    required dynamic monto,
+    required dynamic detalle,
+    required dynamic montoEstacionamiento,
+    required dynamic totalLavados,
+  }) {
+    final horaIngresoFmt = _formatDateTime(horaIngreso);
+    final horaSalidaFmt = _formatDateTime(horaSalida);
+    final detalleText = (detalle ?? '').toString().trim();
+    final estacionamientoText = (montoEstacionamiento ?? '').toString().trim();
+    final lavadosValue = int.tryParse((totalLavados ?? '0').toString()) ?? 0;
 
     return [
-      'TIPO: SALIDA',
+      'ESTACIONAMIENTO CENTRAL',
+      _separator,
+      'TICKET DE SALIDA',
       'PATENTE: $patente',
-      'MINUTOS: $minutos',
-      'MONTO: $monto',
-      if (detalle.isNotEmpty) 'DETALLE: $detalle',
-      '------------------------',
-      'Gracias.',
+      if (horaIngresoFmt.isNotEmpty) 'INGRESO: $horaIngresoFmt',
+      if (horaSalidaFmt.isNotEmpty) 'SALIDA: $horaSalidaFmt',
+      'TIEMPO: ${minutos ?? ''} min',
+      _separator,
+      if (detalleText.isNotEmpty) 'DETALLE: $detalleText',
+      if (estacionamientoText.isNotEmpty)
+        'ESTACIONAMIENTO: \$$estacionamientoText',
+      if (lavadosValue > 0) 'LAVADOS: \$$lavadosValue',
+      _separator,
+      'TOTAL: \$${monto ?? ''}',
+      _separator,
+      'Gracias por su visita.',
     ];
   }
 
@@ -37,6 +92,7 @@ class TicketFormatter {
     required String patente,
     required Map<String, dynamic> confirm,
     Map<String, dynamic>? previewFallback,
+    String? horaIngreso,
   }) {
     final t = confirm['ticket_text'];
 
@@ -47,15 +103,23 @@ class TicketFormatter {
       return t.split('\n');
     }
 
-    if (previewFallback != null) {
-      return salidaFromPreview(patente: patente, preview: previewFallback);
+    if (confirm['fecha_hora_salida'] == null && previewFallback != null) {
+      return salidaFromPreview(
+        patente: patente,
+        preview: previewFallback,
+        horaIngreso: horaIngreso,
+      );
     }
 
-    return [
-      'TIPO: SALIDA',
-      'PATENTE: $patente',
-      '------------------------',
-      'Salida confirmada.',
-    ];
+    return _salidaLines(
+      patente: patente,
+      horaIngreso: confirm['fecha_hora_ingreso'] ?? horaIngreso,
+      horaSalida: confirm['fecha_hora_salida'],
+      minutos: confirm['minutos'],
+      monto: confirm['monto'],
+      detalle: confirm['detalle'],
+      montoEstacionamiento: confirm['monto_estacionamiento'],
+      totalLavados: confirm['total_lavados'],
+    );
   }
 }
