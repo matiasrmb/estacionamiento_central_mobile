@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/app_services.dart';
+import '../../../ui/theme.dart';
 import '../data/ingreso_api.dart';
 import '../data/ingreso_repository.dart';
 import '../../printing/sunmi_printer_service.dart';
@@ -48,7 +49,8 @@ class _IngresoScreenState extends State<IngresoScreen> {
     super.dispose();
   }
 
-  String _normalizePatente(String s) => s.trim().toUpperCase().replaceAll(' ', '');
+  String _normalizePatente(String s) =>
+      s.trim().toUpperCase().replaceAll(' ', '');
 
   bool _patenteValidaBasica(String s) {
     if (s.length < 4 || s.length > 8) return false;
@@ -88,9 +90,9 @@ class _IngresoScreenState extends State<IngresoScreen> {
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingreso registrado')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Ingreso registrado')));
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = 'Ingreso falló: $e');
@@ -115,70 +117,103 @@ class _IngresoScreenState extends State<IngresoScreen> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
+        child: ListView(
           children: [
-            Form(
-              key: _formKey,
-              child: TextFormField(
-                controller: _patenteCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Patente',
-                  hintText: 'Ej: ABCD12',
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Registrar ingreso',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Ingresa la patente para abrir una nueva estadía.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: _patenteCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Patente',
+                          hintText: 'Ej: ABCD12',
+                          prefixIcon: Icon(Icons.directions_car_outlined),
+                        ),
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) {
+                          if (_loading) return;
+                          if (_formKey.currentState!.validate()) _submit();
+                        },
+                        validator: (v) {
+                          final s = _normalizePatente(v ?? '');
+                          if (s.isEmpty) return 'Ingresa una patente';
+                          if (!_patenteValidaBasica(s)) {
+                            return 'Patente inválida';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: _loading
+                            ? null
+                            : () {
+                                if (_formKey.currentState!.validate()) {
+                                  _submit();
+                                }
+                              },
+                        icon: const Icon(Icons.login),
+                        label: _loading
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('Registrar ingreso'),
+                      ),
+                    ],
+                  ),
                 ),
-                textInputAction: TextInputAction.done,
-                onFieldSubmitted: (_) {
-                  if (_loading) return;
-                  if (_formKey.currentState!.validate()) _submit();
-                },
-                validator: (v) {
-                  final s = _normalizePatente(v ?? '');
-                  if (s.isEmpty) return 'Ingresa una patente';
-                  if (!_patenteValidaBasica(s)) return 'Patente inválida (MVP)';
-                  return null;
-                },
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _loading
-                    ? null
-                    : () {
-                        if (_formKey.currentState!.validate()) {
-                          _submit();
-                        }
-                      },
-                child: _loading
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Registrar ingreso'),
               ),
             ),
             const SizedBox(height: 12),
             if (_error != null) ...[
-              Text(_error!, style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 8),
+              _InfoBox(text: _error!, isError: true),
+              const SizedBox(height: 12),
             ],
             if (result != null) ...[
-              const Divider(),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Resultado',
-                  style: Theme.of(context).textTheme.titleMedium,
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ingreso registrado',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 10),
+                      _kv('ID ingreso', result['id_ingreso']?.toString() ?? ''),
+                      _kv('Patente', result['patente']?.toString() ?? ''),
+                      _kv(
+                        'Hora ingreso',
+                        result['hora_ingreso']?.toString() ?? '',
+                      ),
+                      if (result['print_jobs'] != null)
+                        _kv('Impresiones', result['print_jobs'].toString()),
+                      _kv('Sunmi disponible', _sunmiAvailable ? 'Sí' : 'No'),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              _kv('id_ingreso', result['id_ingreso']?.toString() ?? ''),
-              _kv('patente', result['patente']?.toString() ?? ''),
-              _kv('hora_ingreso', result['hora_ingreso']?.toString() ?? ''),
-              if (result['print_jobs'] != null)
-                _kv('print_jobs', result['print_jobs'].toString()),
-              _kv('sunmi_disponible', _sunmiAvailable ? 'Sí' : 'No'),
             ],
           ],
         ),
@@ -201,6 +236,32 @@ class _IngresoScreenState extends State<IngresoScreen> {
           ),
           Expanded(child: Text(v)),
         ],
+      ),
+    );
+  }
+}
+
+class _InfoBox extends StatelessWidget {
+  final String text;
+  final bool isError;
+
+  const _InfoBox({required this.text, this.isError = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isError ? const Color(0xFFFEF2F2) : AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isError ? const Color(0xFFFCA5A5) : AppColors.border,
+        ),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(color: isError ? AppColors.danger : AppColors.text),
       ),
     );
   }

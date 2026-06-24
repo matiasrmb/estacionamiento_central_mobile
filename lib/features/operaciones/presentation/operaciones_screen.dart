@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/app_services.dart';
+import '../../../ui/theme.dart';
 import '../../salida/data/activos_api.dart';
 import '../data/operaciones_api.dart';
 
@@ -59,15 +60,19 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
     return null;
   }
 
-  String _patente(dynamic item) => item is Map ? '${item['patente'] ?? ''}' : '';
-  bool _enLavado(dynamic item) => item is Map && (item['en_lavado'] == true || item['en_lavado'] == 1);
+  String _patente(dynamic item) =>
+      item is Map ? '${item['patente'] ?? ''}' : '';
+  bool _enLavado(dynamic item) =>
+      item is Map && (item['en_lavado'] == true || item['en_lavado'] == 1);
 
   Future<void> _registrarBano() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Confirmar baño'),
-        content: const Text('¿Registrar un uso de baño con el valor configurado?'),
+        content: const Text(
+          '¿Registrar un uso de baño con el valor configurado?',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -85,10 +90,14 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
     try {
       await _api.registrarBano();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Baño registrado')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Baño registrado')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No se pudo registrar baño: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo registrar baño: $e')));
     }
   }
 
@@ -102,7 +111,8 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
         children: [
           for (final categoria in _categorias)
             SimpleDialogOption(
-              onPressed: () => Navigator.of(context).pop('${categoria['clave']}'),
+              onPressed: () =>
+                  Navigator.of(context).pop('${categoria['clave']}'),
               child: Text('${categoria['label']} - ${categoria['valor']}'),
             ),
         ],
@@ -110,11 +120,16 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
     );
     if (categoria == null) return;
     try {
-      await _api.iniciarLavado(idIngreso: idIngreso, categoriaLavado: categoria);
+      await _api.iniciarLavado(
+        idIngreso: idIngreso,
+        categoriaLavado: categoria,
+      );
       await _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No se pudo iniciar lavado: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo iniciar lavado: $e')));
     }
   }
 
@@ -126,7 +141,9 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
       await _load();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No se pudo finalizar lavado: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo finalizar lavado: $e')),
+      );
     }
   }
 
@@ -135,8 +152,13 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Lavados / Baño'),
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.go('/home')),
-        actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh))],
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/home'),
+        ),
+        actions: [
+          IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _registrarBano,
@@ -148,29 +170,123 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Operaciones rápidas',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Gestiona lavados y registra usos de baño.',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 if (_error != null) ...[
-                  Text(_error!, style: const TextStyle(color: Colors.red)),
+                  _MessageBox(text: _error!, isError: true),
                   const SizedBox(height: 12),
                 ],
-                if (_activos.isEmpty) const Text('No hay vehículos activos.'),
+                if (_activos.isEmpty)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        'No hay vehículos activos.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                  ),
                 for (final item in _activos)
                   Card(
-                    child: ListTile(
-                      title: Text(_patente(item)),
-                      subtitle: Text(_enLavado(item) ? 'En lavado' : 'Disponible para lavado'),
-                      trailing: _enLavado(item)
-                          ? ElevatedButton(
-                              onPressed: () => _finalizarLavado(item),
-                              child: const Text('Finalizar'),
-                            )
-                          : ElevatedButton(
-                              onPressed: () => _iniciarLavado(item),
-                              child: const Text('Iniciar'),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: _enLavado(item)
+                                  ? const Color(0xFFFEF3C7)
+                                  : const Color(0xFFEFF6FF),
+                              borderRadius: BorderRadius.circular(8),
                             ),
+                            child: Icon(
+                              Icons.local_car_wash,
+                              color: _enLavado(item)
+                                  ? const Color(0xFF92400E)
+                                  : AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _patente(item),
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium,
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  _enLavado(item)
+                                      ? 'En lavado'
+                                      : 'Disponible para lavado',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => _enLavado(item)
+                                ? _finalizarLavado(item)
+                                : _iniciarLavado(item),
+                            child: Text(
+                              _enLavado(item) ? 'Finalizar' : 'Iniciar',
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
               ],
             ),
+    );
+  }
+}
+
+class _MessageBox extends StatelessWidget {
+  final String text;
+  final bool isError;
+
+  const _MessageBox({required this.text, this.isError = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isError ? const Color(0xFFFEF2F2) : AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isError ? const Color(0xFFFCA5A5) : AppColors.border,
+        ),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(color: isError ? AppColors.danger : AppColors.text),
+      ),
     );
   }
 }

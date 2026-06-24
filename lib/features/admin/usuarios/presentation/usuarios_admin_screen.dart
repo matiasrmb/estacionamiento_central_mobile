@@ -188,7 +188,7 @@ class _UsuarioFormDialogState extends State<_UsuarioFormDialog> {
     final usuario = _usuarioCtrl.text.trim();
     final clave = _claveCtrl.text;
     if (usuario.isEmpty || clave.isEmpty) {
-      setState(() => _error = 'Ingresá usuario y contraseña.');
+      setState(() => _error = 'Ingresa usuario y contraseña.');
       return;
     }
     setState(() {
@@ -289,7 +289,7 @@ class _PasswordDialogState extends State<_PasswordDialog> {
   Future<void> _save() async {
     final clave = _claveCtrl.text;
     if (clave.isEmpty) {
-      setState(() => _error = 'Ingresá la nueva contraseña.');
+      setState(() => _error = 'Ingresa la nueva contraseña.');
       return;
     }
     setState(() {

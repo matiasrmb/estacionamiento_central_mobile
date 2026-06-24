@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/app_services.dart';
+import '../../../ui/theme.dart';
 import '../data/activos_api.dart';
 import '../data/salida_api.dart';
 import '../data/salida_repository.dart';
@@ -118,7 +119,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
         _selected = Map<String, dynamic>.from(item as Map);
         _preview = null;
         _errorPreview =
-            'Este vehículo está en lavado. Finalizá el lavado antes de registrar la salida.';
+            'Este vehículo está en lavado. Finaliza el lavado antes de registrar la salida.';
         _errorConfirm = null;
       });
       return;
@@ -237,140 +238,182 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Activos (${_activos.length})',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                if (_loadingList)
-                  const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-              ],
-            ),
-            if (_errorList != null) ...[
-              const SizedBox(height: 6),
-              Text(_errorList!, style: const TextStyle(color: Colors.red)),
-            ],
-            const SizedBox(height: 8),
-            Expanded(
-              child: ListView.separated(
-                itemCount: _activos.length,
-                separatorBuilder: (context, index) => const Divider(height: 1),
-                itemBuilder: (context, i) {
-                  final item = _activos[i];
-                  final patente = _getPatente(item);
-                  final hora = _getHoraIngreso(item);
-                  final id = _getIdIngreso(item)?.toString() ?? '?';
-                  final enLavado = _isEnLavado(item);
-
-                  final selected =
-                      (sel != null) &&
-                      (_getIdIngreso(sel) == _getIdIngreso(item));
-
-                  return ListTile(
-                    selected: selected,
-                    title: Text(patente.isEmpty ? '(sin patente)' : patente),
-                    subtitle: Text(
-                      enLavado
-                          ? 'id_ingreso: $id  •  ingreso: $hora  •  EN LAVADO'
-                          : 'id_ingreso: $id  •  ingreso: $hora',
-                    ),
-                    trailing: enLavado
-                        ? const Icon(Icons.local_car_wash)
-                        : null,
-                    onTap: () => _selectAndPreview(item),
-                  );
-                },
-              ),
-            ),
-            const Divider(),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Salida (preview)',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (sel == null) ...[
-              const Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Selecciona un activo para ver el cálculo preliminar.',
-                ),
-              ),
-              const SizedBox(height: 8),
-            ] else ...[
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Seleccionado: ${_getPatente(sel)} (id_ingreso ${_getIdIngreso(sel)})',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-              ),
-              const SizedBox(height: 6),
-              if (_loadingPreview) ...[
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                ),
-                const SizedBox(height: 6),
-              ],
-              if (_errorPreview != null) ...[
-                Text(_errorPreview!, style: const TextStyle(color: Colors.red)),
-                const SizedBox(height: 6),
-              ],
-              if (preview != null) ...[
-                _kv('minutos', (preview['minutos'] ?? '').toString()),
-                _kv('monto', (preview['monto'] ?? '').toString()),
-                _kv('detalle', (preview['detalle'] ?? '').toString()),
-                const SizedBox(height: 8),
-              ],
-              if (_sunmiAvailable)
-                Row(
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(
                   children: [
-                    Checkbox(
-                      value: _imprimirSunmi,
-                      onChanged: (v) {
-                        setState(() => _imprimirSunmi = v ?? false);
-                      },
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Vehículos activos',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${_activos.length} vehículo(s) dentro',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
                     ),
-                    const Expanded(child: Text('Imprimir también en Sunmi')),
+                    if (_loadingList)
+                      const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
                   ],
                 ),
-              if (_errorConfirm != null) ...[
-                Text(_errorConfirm!, style: const TextStyle(color: Colors.red)),
-                const SizedBox(height: 6),
-              ],
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: (_confirming || preview == null)
-                      ? null
-                      : _confirmSalida,
-                  child: _confirming
-                      ? const SizedBox(
+              ),
+            ),
+            if (_errorList != null) ...[
+              const SizedBox(height: 10),
+              _MessageBox(text: _errorList!, isError: true),
+            ],
+            const SizedBox(height: 12),
+            Expanded(
+              child: _activos.isEmpty && !_loadingList
+                  ? const Center(child: Text('No hay vehículos activos.'))
+                  : ListView.separated(
+                      itemCount: _activos.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 10),
+                      itemBuilder: (context, i) {
+                        final item = _activos[i];
+                        final patente = _getPatente(item);
+                        final hora = _getHoraIngreso(item);
+                        final id = _getIdIngreso(item)?.toString() ?? '?';
+                        final enLavado = _isEnLavado(item);
+
+                        final selected =
+                            (sel != null) &&
+                            (_getIdIngreso(sel) == _getIdIngreso(item));
+
+                        return Card(
+                          color: selected
+                              ? const Color(0xFFEFF6FF)
+                              : AppColors.surface,
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            leading: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: enLavado
+                                    ? const Color(0xFFFEF3C7)
+                                    : const Color(0xFFEFF6FF),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                enLavado
+                                    ? Icons.local_car_wash
+                                    : Icons.directions_car,
+                                color: enLavado
+                                    ? const Color(0xFF92400E)
+                                    : AppColors.primary,
+                              ),
+                            ),
+                            title: Text(
+                              patente.isEmpty ? '(sin patente)' : patente,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
+                            subtitle: Text(
+                              enLavado
+                                  ? 'Ingreso: $hora • En lavado'
+                                  : 'Ingreso: $hora • ID $id',
+                            ),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => _selectAndPreview(item),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Salida',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    if (sel == null) ...[
+                      Text(
+                        'Selecciona un activo para ver el cálculo preliminar.',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ] else ...[
+                      Text(
+                        'Seleccionado: ${_getPatente(sel)}',
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 8),
+                      if (_loadingPreview) ...[
+                        const SizedBox(
                           height: 18,
                           width: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Confirmar salida (imprime en PC)'),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      if (_errorPreview != null) ...[
+                        _MessageBox(text: _errorPreview!, isError: true),
+                        const SizedBox(height: 8),
+                      ],
+                      if (preview != null) ...[
+                        _kv('Minutos', (preview['minutos'] ?? '').toString()),
+                        _kv('Monto', (preview['monto'] ?? '').toString()),
+                        _kv('Detalle', (preview['detalle'] ?? '').toString()),
+                        const SizedBox(height: 8),
+                      ],
+                      if (_sunmiAvailable)
+                        CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          value: _imprimirSunmi,
+                          onChanged: (v) {
+                            setState(() => _imprimirSunmi = v ?? false);
+                          },
+                          title: const Text('Imprimir también en Sunmi'),
+                          controlAffinity: ListTileControlAffinity.leading,
+                        ),
+                      if (_errorConfirm != null) ...[
+                        _MessageBox(text: _errorConfirm!, isError: true),
+                        const SizedBox(height: 8),
+                      ],
+                      ElevatedButton.icon(
+                        onPressed: (_confirming || preview == null)
+                            ? null
+                            : _confirmSalida,
+                        icon: const Icon(Icons.logout),
+                        label: _confirming
+                            ? const SizedBox(
+                                height: 18,
+                                width: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('Confirmar salida'),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            ],
+            ),
           ],
         ),
       ),
@@ -392,6 +435,32 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
           ),
           Expanded(child: Text(v)),
         ],
+      ),
+    );
+  }
+}
+
+class _MessageBox extends StatelessWidget {
+  final String text;
+  final bool isError;
+
+  const _MessageBox({required this.text, this.isError = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isError ? const Color(0xFFFEF2F2) : AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isError ? const Color(0xFFFCA5A5) : AppColors.border,
+        ),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(color: isError ? AppColors.danger : AppColors.text),
       ),
     );
   }
