@@ -71,7 +71,7 @@ class _UsuariosAdminScreenState extends State<UsuariosAdminScreen> {
       builder: (context) => AlertDialog(
         title: Text(newStatus ? 'Activar usuario' : 'Desactivar usuario'),
         content: Text(
-          '¿Seguro que querés ${newStatus ? 'activar' : 'desactivar'} el usuario "$usuario"?',
+          '¿Seguro que deseas ${newStatus ? 'activar' : 'desactivar'} el usuario "$usuario"?',
         ),
         actions: [
           TextButton(
@@ -131,6 +131,7 @@ class _UsuariosAdminScreenState extends State<UsuariosAdminScreen> {
                 if (_items.isEmpty) const Text('No hay usuarios registrados.'),
                 for (final item in _items)
                   Card(
+                    margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
                       title: Text('${item['usuario']}'),
                       subtitle: Text(

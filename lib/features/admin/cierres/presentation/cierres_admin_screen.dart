@@ -180,6 +180,7 @@ class _CierresAdminScreenState extends State<CierresAdminScreen> {
                   const Text('Todavía no hay cierres registrados.'),
                 for (final item in _historial)
                   Card(
+                    margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
                       title: Text(_money(item['total_general'])),
                       subtitle: Text(

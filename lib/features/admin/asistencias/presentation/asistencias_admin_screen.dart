@@ -260,6 +260,7 @@ class _AsistenciasAdminScreenState extends State<AsistenciasAdminScreen> {
             const Text('No hay asistencias para esos filtros.'),
           for (final item in _items)
             Card(
+              margin: const EdgeInsets.only(bottom: 12),
               child: ListTile(
                 leading: Icon(
                   item['activa'] == true

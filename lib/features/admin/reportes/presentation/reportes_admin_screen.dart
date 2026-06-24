@@ -212,6 +212,7 @@ class _ReportesAdminScreenState extends State<ReportesAdminScreen> {
             const Text('No hay movimientos para esos filtros.'),
           for (final item in _items)
             Card(
+              margin: const EdgeInsets.only(bottom: 12),
               child: ListTile(
                 leading: Icon(
                   item['tipo'] == 'bano' ? Icons.wc : Icons.directions_car,

@@ -55,14 +55,14 @@ class _TarifasAdminScreenState extends State<TarifasAdminScreen> {
       await _api.eliminar(id);
       await _load();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tramo eliminado')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Tramo eliminado')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo eliminar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo eliminar: $e')));
     }
   }
 
@@ -95,8 +95,11 @@ class _TarifasAdminScreenState extends State<TarifasAdminScreen> {
                 if (_items.isEmpty) const Text('No hay tramos personalizados.'),
                 for (final item in _items)
                   Card(
+                    margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
-                      title: Text('${item['minuto_inicio']} - ${item['minuto_fin']} min'),
+                      title: Text(
+                        '${item['minuto_inicio']} - ${item['minuto_fin']} min',
+                      ),
                       subtitle: Text('Valor: ${item['valor']}'),
                       trailing: Wrap(
                         children: [
@@ -139,7 +142,9 @@ class _TarifaFormDialogState extends State<_TarifaFormDialog> {
   void initState() {
     super.initState();
     final item = widget.item;
-    _inicioCtrl = TextEditingController(text: '${item?['minuto_inicio'] ?? ''}');
+    _inicioCtrl = TextEditingController(
+      text: '${item?['minuto_inicio'] ?? ''}',
+    );
     _finCtrl = TextEditingController(text: '${item?['minuto_fin'] ?? ''}');
     _valorCtrl = TextEditingController(text: '${item?['valor'] ?? ''}');
   }
@@ -161,7 +166,11 @@ class _TarifaFormDialogState extends State<_TarifaFormDialog> {
     try {
       final item = widget.item;
       if (item == null) {
-        await widget.api.crear(minutoInicio: inicio, minutoFin: fin, valor: valor);
+        await widget.api.crear(
+          minutoInicio: inicio,
+          minutoFin: fin,
+          valor: valor,
+        );
       } else {
         await widget.api.actualizar(
           idTarifa: item['id_tarifa'] as int,

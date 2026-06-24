@@ -60,9 +60,9 @@ class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo eliminar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo eliminar: $e')));
     }
   }
 
@@ -92,12 +92,16 @@ class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
                   Text(_error!, style: const TextStyle(color: Colors.red)),
                   const SizedBox(height: 12),
                 ],
-                if (_items.isEmpty) const Text('No hay clientes mensuales activos.'),
+                if (_items.isEmpty)
+                  const Text('No hay clientes mensuales activos.'),
                 for (final item in _items)
                   Card(
+                    margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
                       title: Text('${item['patente']}'),
-                      subtitle: Text('Tarifa mensual: ${item['tarifa_mensual'] ?? 0}'),
+                      subtitle: Text(
+                        'Tarifa mensual: ${item['tarifa_mensual'] ?? 0}',
+                      ),
                       trailing: Wrap(
                         children: [
                           IconButton(
@@ -141,12 +145,16 @@ class _MensualFormDialogState extends State<_MensualFormDialog> {
     super.initState();
     final item = widget.item;
     _patenteCtrl = TextEditingController(text: '${item?['patente'] ?? ''}');
-    _tarifaCtrl = TextEditingController(text: '${item?['tarifa_mensual'] ?? ''}');
+    _tarifaCtrl = TextEditingController(
+      text: '${item?['tarifa_mensual'] ?? ''}',
+    );
   }
 
   Future<void> _save() async {
     final patente = _patenteCtrl.text.trim().toUpperCase().replaceAll(' ', '');
-    final tarifa = int.tryParse(_tarifaCtrl.text.trim().isEmpty ? '0' : _tarifaCtrl.text.trim());
+    final tarifa = int.tryParse(
+      _tarifaCtrl.text.trim().isEmpty ? '0' : _tarifaCtrl.text.trim(),
+    );
     if (patente.isEmpty || tarifa == null) {
       setState(() => _error = 'Ingresa patente y tarifa válida.');
       return;

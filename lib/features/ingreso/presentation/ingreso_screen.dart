@@ -106,6 +106,8 @@ class _IngresoScreenState extends State<IngresoScreen> {
   @override
   Widget build(BuildContext context) {
     final result = _result;
+    final ingreso = result?['ingreso'];
+    final ingresoData = ingreso is Map ? ingreso : result;
 
     return Scaffold(
       appBar: AppBar(
@@ -201,14 +203,17 @@ class _IngresoScreenState extends State<IngresoScreen> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 10),
-                      _kv('ID ingreso', result['id_ingreso']?.toString() ?? ''),
-                      _kv('Patente', result['patente']?.toString() ?? ''),
+                      _kv(
+                        'ID ingreso',
+                        ingresoData?['id_ingreso']?.toString() ?? '',
+                      ),
+                      _kv('Patente', ingresoData?['patente']?.toString() ?? ''),
                       _kv(
                         'Hora ingreso',
-                        result['hora_ingreso']?.toString() ?? '',
+                        ingresoData?['hora_ingreso']?.toString() ?? '',
                       ),
-                      if (result['print_jobs'] != null)
-                        _kv('Impresiones', result['print_jobs'].toString()),
+                      if (result['print'] != null)
+                        _kv('Impresión PC', 'Creada'),
                       _kv('Sunmi disponible', _sunmiAvailable ? 'Sí' : 'No'),
                     ],
                   ),
