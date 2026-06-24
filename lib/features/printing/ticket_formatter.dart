@@ -1,5 +1,7 @@
 class TicketFormatter {
   static const _separator = '------------------------';
+  static const _topMargin = [_separator, _separator];
+  static const _bottomMargin = [_separator, _separator, _separator];
 
   static String _formatDateTime(dynamic value) {
     final text = (value ?? '').toString().trim();
@@ -25,6 +27,7 @@ class TicketFormatter {
     );
 
     return [
+      ..._topMargin,
       'ESTACIONAMIENTO CENTRAL',
       _separator,
       'TICKET DE INGRESO',
@@ -32,6 +35,7 @@ class TicketFormatter {
       if (horaIngreso.isNotEmpty) 'INGRESO: $horaIngreso',
       _separator,
       'Gracias por su visita.',
+      ..._bottomMargin,
     ];
   }
 
@@ -69,6 +73,7 @@ class TicketFormatter {
     final lavadosValue = int.tryParse((totalLavados ?? '0').toString()) ?? 0;
 
     return [
+      ..._topMargin,
       'ESTACIONAMIENTO CENTRAL',
       _separator,
       'TICKET DE SALIDA',
@@ -85,6 +90,7 @@ class TicketFormatter {
       'TOTAL: \$${monto ?? ''}',
       _separator,
       'Gracias por su visita.',
+      ..._bottomMargin,
     ];
   }
 

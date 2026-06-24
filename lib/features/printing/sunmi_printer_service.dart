@@ -71,6 +71,11 @@ class SunmiPrinterService {
     try {
       debugPrint('SUNMI print -> líneas: ${lines.length}');
       for (final line in lines) {
+        if (line.trim().isEmpty) {
+          await SunmiPrinter.lineWrap(1);
+          continue;
+        }
+
         final isCentered =
             line == 'ESTACIONAMIENTO CENTRAL' ||
             line.startsWith('TICKET') ||
@@ -87,7 +92,7 @@ class SunmiPrinterService {
         );
       }
 
-      await SunmiPrinter.lineWrap(4);
+      await SunmiPrinter.lineWrap(2);
 
       try {
         await SunmiPrinter.cutPaper();
