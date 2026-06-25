@@ -208,45 +208,53 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: _enLavado(item)
-                                  ? const Color(0xFFFEF3C7)
-                                  : const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.local_car_wash,
-                              color: _enLavado(item)
-                                  ? const Color(0xFF92400E)
-                                  : AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _patente(item),
-                                  style: Theme.of(
-                                    context,
-                                  ).textTheme.titleMedium,
+                          Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: _enLavado(item)
+                                      ? const Color(0xFFFEF3C7)
+                                      : const Color(0xFFEFF6FF),
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _enLavado(item)
-                                      ? 'En lavado'
-                                      : 'Disponible para lavado',
-                                  style: Theme.of(context).textTheme.bodySmall,
+                                child: Icon(
+                                  Icons.local_car_wash,
+                                  color: _enLavado(item)
+                                      ? const Color(0xFF92400E)
+                                      : AppColors.primary,
                                 ),
-                              ],
-                            ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _patente(item),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      _enLavado(item)
+                                          ? 'En lavado'
+                                          : 'Disponible para lavado',
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
+                          const SizedBox(height: 12),
                           ElevatedButton(
                             onPressed: () => _enLavado(item)
                                 ? _finalizarLavado(item)
