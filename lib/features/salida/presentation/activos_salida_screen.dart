@@ -171,10 +171,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
     });
 
     try {
-      final confirm = await _repo.confirmar(
-        idIngreso,
-        imprimirSunmi: _imprimirSunmi,
-      );
+      final confirm = await _repo.confirmar(idIngreso);
 
       if (_imprimirSunmi && _sunmiAvailable) {
         try {

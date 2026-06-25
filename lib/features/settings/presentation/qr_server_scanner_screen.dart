@@ -41,10 +41,7 @@ class _QrServerScannerScreenState extends State<QrServerScannerScreen> {
       appBar: AppBar(title: const Text('Escanear servidor')),
       body: Stack(
         children: [
-          MobileScanner(
-            controller: _controller,
-            onDetect: _handleDetect,
-          ),
+          MobileScanner(controller: _controller, onDetect: _handleDetect),
           const Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
@@ -53,7 +50,7 @@ class _QrServerScannerScreenState extends State<QrServerScannerScreen> {
                 child: Padding(
                   padding: EdgeInsets.all(12),
                   child: Text(
-                    'Escaneá el QR que muestra run.ps1 en la máquina donde está la API.',
+                    'Escanea el QR que muestra run.ps1 en la máquina donde está la API.',
                     textAlign: TextAlign.center,
                   ),
                 ),

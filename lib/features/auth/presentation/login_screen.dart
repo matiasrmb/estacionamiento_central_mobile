@@ -49,15 +49,15 @@ class _LoginScreenState extends State<LoginScreen> {
       await _repo.login(_usuarioCtrl.text.trim(), _claveCtrl.text);
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Login OK')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Inicio de sesión correcto')),
+      );
 
       context.go('/home');
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Login falló: $e';
+        _error = 'No se pudo iniciar sesión: $e';
       });
     } finally {
       if (mounted) {

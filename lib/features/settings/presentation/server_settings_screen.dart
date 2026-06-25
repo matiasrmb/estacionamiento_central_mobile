@@ -58,7 +58,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
         ),
       );
       final res = await dio.get('$baseUrl/health');
-      return res.statusCode != null && res.statusCode! >= 200 && res.statusCode! < 300;
+      return res.statusCode != null &&
+          res.statusCode! >= 200 &&
+          res.statusCode! < 300;
     } catch (_) {
       return false;
     }
@@ -103,7 +105,8 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     if (!ok) {
       if (!mounted) return;
       setState(() {
-        _error = 'No se pudo conectar con $v/health. Verificá que run.ps1 esté activo y que el teléfono esté en la misma red.';
+        _error =
+            'No se pudo conectar con $v/health. Verifica que run.ps1 esté activo y que el teléfono esté en la misma red.';
         _testing = false;
       });
       return;
@@ -115,9 +118,9 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     await AppServices.I.reloadClient();
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Servidor guardado')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Servidor guardado')));
     setState(() => _testing = false);
     context.pop();
   }
@@ -133,9 +136,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -155,75 +156,77 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-            const Text('Entrada rápida para Sunmi'),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: TextField(
-                    controller: _ipCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'IP',
-                      hintText: '192.168.1.8',
-                      border: OutlineInputBorder(),
-                    ),
+          const Text('Entrada rápida para Sunmi'),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextField(
+                  controller: _ipCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'IP',
+                    hintText: '192.168.1.8',
+                    border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _portCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Puerto',
-                      hintText: '8000',
-                      border: OutlineInputBorder(),
-                    ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _portCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Puerto',
+                    hintText: '8000',
+                    border: OutlineInputBorder(),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                onPressed: _testing ? null : _buildUrlFromIpPort,
-                child: const Text('Armar URL con IP y puerto'),
               ),
-            ),
-            const SizedBox(height: 20),
-            const Text('Base URL FastAPI (incluye /api/v1)'),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _ctrl,
-              decoration: const InputDecoration(
-                hintText: 'http://192.168.100.10:8000/api/v1',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 10),
-            if (_error != null) ...[
-              Text(_error!, style: const TextStyle(color: Colors.red)),
-              const SizedBox(height: 10),
             ],
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _testing ? null : _save,
-                child: Text(_testing ? 'Probando conexión...' : 'Probar y guardar'),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _testing ? null : _buildUrlFromIpPort,
+              child: const Text('Armar URL con IP y puerto'),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text('Base URL FastAPI (incluye /api/v1)'),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _ctrl,
+            decoration: const InputDecoration(
+              hintText: 'http://192.168.100.10:8000/api/v1',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 10),
+          if (_error != null) ...[
+            Text(_error!, style: const TextStyle(color: Colors.red)),
+            const SizedBox(height: 10),
+          ],
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _testing ? null : _save,
+              child: Text(
+                _testing ? 'Probando conexión...' : 'Probar y guardar',
               ),
             ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _testing ? null : _scanQr,
-                icon: const Icon(Icons.qr_code_scanner),
-                label: const Text('Escanear QR de run.ps1'),
-              ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _testing ? null : _scanQr,
+              icon: const Icon(Icons.qr_code_scanner),
+              label: const Text('Escanear QR de run.ps1'),
             ),
+          ),
         ],
       ),
     );
