@@ -5,6 +5,7 @@ import 'features/salida/presentation/activos_salida_screen.dart';
 import 'features/bootstrap/presentation/bootstrap_screen.dart';
 import 'features/auth/presentation/login_screen.dart';
 import 'features/home/presentation/home_screen.dart';
+import 'features/operacion_diaria/presentation/operacion_diaria_screen.dart';
 import 'features/operaciones/presentation/operaciones_screen.dart';
 import 'features/settings/presentation/server_settings_screen.dart';
 import 'features/admin/configuracion/presentation/configuracion_admin_screen.dart';
@@ -39,6 +40,10 @@ class App extends StatelessWidget {
       GoRoute(path: '/', builder: (context, state) => const BootstrapScreen()),
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+      GoRoute(
+        path: '/operacion-diaria',
+        builder: (context, state) => const OperacionDiariaScreen(),
+      ),
       GoRoute(
         path: '/ingreso',
         builder: (context, state) => const IngresoScreen(),

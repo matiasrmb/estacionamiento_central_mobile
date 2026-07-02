@@ -79,7 +79,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
     final ip = _ipCtrl.text.trim();
     final port = _portCtrl.text.trim().isEmpty ? '8000' : _portCtrl.text.trim();
     if (ip.isEmpty) {
-      setState(() => _error = 'Ingresa la IP que muestra run.ps1.');
+      setState(() => _error = 'Ingresa la IP LAN del servidor instalado.');
       return;
     }
     _ctrl.text = 'http://$ip:$port/api/v1';
@@ -106,7 +106,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
       if (!mounted) return;
       setState(() {
         _error =
-            'No se pudo conectar con $v/health. Verifica que run.ps1 esté activo y que el teléfono esté en la misma red.';
+            'No se pudo conectar con $v/health. Verifica que el servicio API esté instalado, activo y que el teléfono esté en la misma red.';
         _testing = false;
       });
       return;
@@ -224,7 +224,7 @@ class _ServerSettingsScreenState extends State<ServerSettingsScreen> {
             child: OutlinedButton.icon(
               onPressed: _testing ? null : _scanQr,
               icon: const Icon(Icons.qr_code_scanner),
-              label: const Text('Escanear QR de run.ps1'),
+              label: const Text('Escanear QR del servidor'),
             ),
           ),
         ],

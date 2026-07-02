@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/app_services.dart';
 import '../../../ui/theme.dart';
 import '../../salida/data/activos_api.dart';
+import '../../operacion_diaria/data/operacion_diaria_state.dart';
 import '../data/operaciones_api.dart';
 
 class OperacionesScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
   String? _error;
   List<dynamic> _activos = [];
   List<Map<String, dynamic>> _categorias = [];
+  final _searchCtrl = TextEditingController();
 
   @override
   void initState() {
@@ -28,6 +30,12 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
     _api = OperacionesApi(client);
     _activosApi = ActivosApi(client);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -64,6 +72,14 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
       item is Map ? '${item['patente'] ?? ''}' : '';
   bool _enLavado(dynamic item) =>
       item is Map && (item['en_lavado'] == true || item['en_lavado'] == 1);
+
+  List<dynamic> get _filteredActivos {
+    final query = normalizePlateInput(_searchCtrl.text);
+    if (query.isEmpty) return _activos;
+    return _activos
+        .where((item) => normalizePlateInput(_patente(item)).contains(query))
+        .toList();
+  }
 
   Future<void> _registrarBano() async {
     final confirmed = await showDialog<bool>(
@@ -194,7 +210,16 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
                   _MessageBox(text: _error!, isError: true),
                   const SizedBox(height: 12),
                 ],
-                if (_activos.isEmpty)
+                TextField(
+                  controller: _searchCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Buscar patente para lavado',
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                  onChanged: (_) => setState(() {}),
+                ),
+                const SizedBox(height: 12),
+                if (_filteredActivos.isEmpty)
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -204,7 +229,7 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
                       ),
                     ),
                   ),
-                for (final item in _activos)
+                for (final item in _filteredActivos)
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),

@@ -104,6 +104,12 @@ class _HomeScreenState extends State<HomeScreen> {
               subtitle: 'Ingresos, salidas y servicios rápidos.',
               children: [
                 _HomeActionButton(
+                  label: 'Operación diaria unificada',
+                  icon: Icons.search,
+                  onPressed: () => context.go('/operacion-diaria'),
+                ),
+                const SizedBox(height: 10),
+                _HomeActionButton(
                   label: 'Ingreso',
                   icon: Icons.login,
                   onPressed: () => context.go('/ingreso'),

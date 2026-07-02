@@ -50,7 +50,7 @@ class _QrServerScannerScreenState extends State<QrServerScannerScreen> {
                 child: Padding(
                   padding: EdgeInsets.all(12),
                   child: Text(
-                    'Escanea el QR que muestra run.ps1 en la máquina donde está la API.',
+                    'Escanea el QR o la guía generada por el instalador en la máquina donde está la API.',
                     textAlign: TextAlign.center,
                   ),
                 ),
