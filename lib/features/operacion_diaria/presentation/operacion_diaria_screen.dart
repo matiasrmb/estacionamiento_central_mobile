@@ -12,6 +12,7 @@ import '../../salida/data/activos_api.dart';
 import '../../salida/data/salida_api.dart';
 import '../../salida/data/salida_repository.dart';
 import '../data/operacion_diaria_state.dart';
+import '../domain/cotizacion_time.dart';
 
 class OperacionDiariaScreen extends StatefulWidget {
   const OperacionDiariaScreen({super.key});
@@ -226,6 +227,243 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
     );
   }
 
+  String _money(dynamic value) {
+    final amount = value is num ? value : num.tryParse('$value') ?? 0;
+    return '\$${amount.round()}';
+  }
+
+  Future<void> _mostrarCotizaciones() async {
+    final tipo = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Cotizaciones'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(context).pop('estadia'),
+            child: const Text('Estadía'),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(context).pop('lavado'),
+            child: const Text('Lavado'),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(context).pop('mensualidad'),
+            child: const Text('Mensualidad'),
+          ),
+        ],
+      ),
+    );
+    if (tipo == null) return;
+    if (tipo == 'estadia') {
+      await _cotizarEstadia();
+    } else if (tipo == 'lavado') {
+      await _cotizarLavado();
+    } else {
+      await _cotizarMensualidadManual();
+    }
+  }
+
+  Future<void> _cotizarEstadia() async {
+    var horaIngreso = '';
+    var horaSalida = '';
+    final minutos = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cotizar estadía'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              initialValue: horaIngreso,
+              onChanged: (value) => horaIngreso = value,
+              keyboardType: TextInputType.datetime,
+              decoration: const InputDecoration(
+                labelText: 'Hora de ingreso',
+                hintText: '13:00 o 1300',
+                helperText: 'Podés escribir HH:MM o HHMM.',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              initialValue: horaSalida,
+              onChanged: (value) => horaSalida = value,
+              keyboardType: TextInputType.datetime,
+              decoration: const InputDecoration(
+                labelText: 'Hora de salida',
+                hintText: '19:00 o 1900',
+                helperText: 'Podés escribir HH:MM o HHMM.',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              try {
+                Navigator.of(context).pop(
+                  _calcularMinutosPorHorarios(horaIngreso, horaSalida),
+                );
+              } on FormatException catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(e.message)),
+                );
+              }
+            },
+            child: const Text('Cotizar'),
+          ),
+        ],
+      ),
+    );
+    if (minutos == null) return;
+    await _mostrarPreviewCotizacion({
+      'estadia': {'minutos': minutos},
+    });
+  }
+
+  int _calcularMinutosPorHorarios(String ingreso, String salida) {
+    return CotizacionTime.calcularMinutosPorHorarios(ingreso, salida);
+  }
+
+  Future<void> _cotizarLavado() async {
+    try {
+      final opciones = await _operacionesApi.listarOpcionesCotizacion();
+      final lavados = List<Map<String, dynamic>>.from(
+        (opciones['lavados'] as List? ?? const []).map(
+          (item) => Map<String, dynamic>.from(item as Map),
+        ),
+      ).where((item) => int.tryParse('${item['activo'] ?? 1}') != 0).toList();
+      if (!mounted) return;
+      if (lavados.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${(opciones['messages'] as Map?)?['lavados'] ?? 'No hay precios de lavado configurados para cotizar.'}',
+            ),
+          ),
+        );
+        return;
+      }
+      final elegido = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (context) => SimpleDialog(
+          title: const Text('Cotizar lavado'),
+          children: [
+            for (final item in lavados)
+              SimpleDialogOption(
+                onPressed: () => Navigator.of(context).pop(item),
+                child: Text('${item['nombre']} - ${_money(item['valor_lavado'])}'),
+              ),
+          ],
+        ),
+      );
+      if (elegido == null) return;
+      await _mostrarPreviewCotizacion({
+        'lavado': {
+          'tipo_lavado': '${elegido['nombre']}',
+          'monto_lavado': int.tryParse('${elegido['valor_lavado']}') ?? 0,
+        },
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo cotizar lavado: $e')),
+      );
+    }
+  }
+
+  Future<void> _cotizarMensualidadManual() async {
+    var montoText = '';
+    final monto = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cotizar mensualidad'),
+        content: TextFormField(
+          initialValue: montoText,
+          onChanged: (value) => montoText = value,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: 'Monto mensual negociado'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(
+              context,
+            ).pop(int.tryParse(montoText.trim()) ?? 0),
+            child: const Text('Cotizar'),
+          ),
+        ],
+      ),
+    );
+    if (monto == null) return;
+    if (monto <= 0) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ingresá un monto mensual mayor a cero.')),
+      );
+      return;
+    }
+    if (!mounted) return;
+    final diario = (monto / 30).round();
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cotización'),
+        content: Text(
+          'Mensualidad: ${_money(monto)}\nEquivalente diario (30 días): ${_money(diario)}\nTotal estimado: ${_money(monto)}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _mostrarPreviewCotizacion(Map<String, dynamic> payload) async {
+    try {
+      final preview = await _operacionesApi.previewCotizacion(payload);
+      if (!mounted) return;
+      final lines = <String>['Total estimado: ${_money(preview['total'])}'];
+      final items = preview['items'];
+      if (items is List) {
+        for (final item in items.whereType<Map>()) {
+          if (item['tipo'] == 'lavado') {
+            lines.add('Lavado ${item['tipo_lavado']}: ${_money(item['monto'])}');
+          } else if (item['tipo'] == 'estadia') {
+            lines.add('Estadía ${item['minutos']} min: ${_money(item['monto'])}');
+          }
+        }
+      }
+      showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Cotización'),
+          content: Text(lines.join('\n')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cerrar'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo cotizar: $e')),
+      );
+    }
+  }
+
   void _openActions(OperacionDiariaRecord record) {
     showModalBottomSheet<void>(
       context: context,
@@ -271,11 +509,6 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
                 label: Text(
                   record.enLavado ? 'Finalizar lavado' : 'Iniciar lavado',
                 ),
-              ),
-              OutlinedButton.icon(
-                onPressed: null,
-                icon: const Icon(Icons.calendar_month),
-                label: const Text('Mensualidad (próximo paso)'),
               ),
             ],
           ),
@@ -371,6 +604,12 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
                 ],
               ),
             ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: _mostrarCotizaciones,
+            icon: const Icon(Icons.request_quote),
+            label: const Text('Cotizaciones'),
           ),
           const SizedBox(height: 12),
           if (_error != null) _MessageBox(text: _error!, isError: true),

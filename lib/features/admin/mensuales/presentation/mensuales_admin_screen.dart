@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/app_services.dart';
+import '../../../../core/roles.dart';
+import '../../../../core/storage.dart';
 import '../data/mensuales_api.dart';
 
 class MensualesAdminScreen extends StatefulWidget {
@@ -14,6 +16,7 @@ class MensualesAdminScreen extends StatefulWidget {
 class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
   late final MensualesApi _api;
   bool _loading = true;
+  bool _isAdmin = false;
   String? _error;
   List<Map<String, dynamic>> _items = [];
 
@@ -21,7 +24,19 @@ class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
   void initState() {
     super.initState();
     _api = MensualesApi(AppServices.I.client);
-    _load();
+    _loadSessionAndData();
+  }
+
+  Future<void> _loadSessionAndData() async {
+    final role = await SecureStore().readRole() ?? '';
+    if (!mounted) return;
+    final isAdmin = AppRoles.isAdmin(role);
+    setState(() => _isAdmin = isAdmin);
+    if (!isAdmin) {
+      setState(() => _loading = false);
+      return;
+    }
+    await _load();
   }
 
   Future<void> _load() async {
@@ -76,15 +91,25 @@ class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
           onPressed: () => context.go('/home'),
         ),
         actions: [
-          IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
+          if (_isAdmin)
+            IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openForm(),
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _isAdmin
+          ? FloatingActionButton(
+              onPressed: () => _openForm(),
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: _loading
           ? const Center(child: CircularProgressIndicator())
+          : !_isAdmin
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('No tenés permisos para administrar mensuales.'),
+              ),
+            )
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [

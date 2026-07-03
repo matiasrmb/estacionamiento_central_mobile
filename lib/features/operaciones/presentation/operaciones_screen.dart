@@ -20,7 +20,9 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
   bool _loading = true;
   String? _error;
   List<dynamic> _activos = [];
+  List<Map<String, dynamic>> _soloLavados = [];
   List<Map<String, dynamic>> _categorias = [];
+  List<Map<String, dynamic>> _tiposVehiculoLavado = [];
   final _searchCtrl = TextEditingController();
 
   @override
@@ -46,10 +48,14 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
     try {
       final activos = await _activosApi.listarActivos();
       final categorias = await _api.listarCategoriasLavado();
+      final soloLavados = await _api.listarSoloLavadosActivos();
+      final tiposVehiculoLavado = await _api.listarTiposVehiculoLavado();
       if (!mounted) return;
       setState(() {
         _activos = activos;
+        _soloLavados = soloLavados;
         _categorias = categorias;
+        _tiposVehiculoLavado = tiposVehiculoLavado;
       });
     } catch (e) {
       if (!mounted) return;
@@ -79,6 +85,28 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
     return _activos
         .where((item) => normalizePlateInput(_patente(item)).contains(query))
         .toList();
+  }
+
+  List<Map<String, dynamic>> get _filteredSoloLavados {
+    final query = normalizePlateInput(_searchCtrl.text);
+    if (query.isEmpty) return _soloLavados;
+    return _soloLavados
+        .where(
+          (item) =>
+              normalizePlateInput('${item['patente'] ?? ''}').contains(query),
+        )
+        .toList();
+  }
+
+  bool get _hasExactActivePlate {
+    final plate = normalizePlateInput(_searchCtrl.text);
+    if (plate.isEmpty) return false;
+    return _activos.any(
+          (item) => normalizePlateInput(_patente(item)) == plate,
+        ) ||
+        _soloLavados.any(
+          (item) => normalizePlateInput('${item['patente'] ?? ''}') == plate,
+        );
   }
 
   Future<void> _registrarBano() async {
@@ -163,6 +191,95 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
     }
   }
 
+  Future<Map<String, dynamic>?> _seleccionarTipoVehiculoLavado() async {
+    final activos = _tiposVehiculoLavado
+        .where((tipo) => tipo['activo'] == true || tipo['activo'] == 1)
+        .toList();
+    if (activos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No hay tipos de vehículo lavado activos.'),
+        ),
+      );
+      return null;
+    }
+    return showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Seleccionar solo lavado'),
+        children: [
+          for (final tipo in activos)
+            SimpleDialogOption(
+              onPressed: () => Navigator.of(context).pop(tipo),
+              child: Text('${tipo['nombre']} - ${tipo['valor_lavado']}'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _iniciarSoloLavado() async {
+    final patente = normalizePlateInput(_searchCtrl.text);
+    if (patente.isEmpty || _hasExactActivePlate) return;
+    final tipo = await _seleccionarTipoVehiculoLavado();
+    if (tipo == null) return;
+    final id = tipo['id_tipo_vehiculo_lavado'];
+    final idTipo = id is int ? id : int.tryParse('$id');
+    if (idTipo == null) return;
+    try {
+      await _api.iniciarSoloLavado(
+        patente: patente,
+        idTipoVehiculoLavado: idTipo,
+      );
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Solo lavado iniciado')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo iniciar solo lavado: $e')),
+      );
+    }
+  }
+
+  Future<void> _finalizarSoloLavado(Map<String, dynamic> item) async {
+    final id = item['id_operacion_servicio'];
+    final idOperacion = id is int ? id : int.tryParse('$id');
+    if (idOperacion == null) return;
+    final accion = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Finalizar solo lavado'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(context).pop('cobrar'),
+            child: const Text('Cobrar ahora'),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.of(context).pop('convertir'),
+            child: const Text('Convertir a estadía'),
+          ),
+        ],
+      ),
+    );
+    if (accion == null) return;
+    try {
+      if (accion == 'cobrar') {
+        await _api.cobrarSoloLavado(idOperacionServicio: idOperacion);
+      } else {
+        await _api.convertirSoloLavado(idOperacionServicio: idOperacion);
+      }
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo finalizar solo lavado: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -198,7 +315,7 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Gestiona lavados y registra usos de baño.',
+                          'Gestiona lavados, solo lavados y usos de baño.',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -219,6 +336,40 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
                   onChanged: (_) => setState(() {}),
                 ),
                 const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _hasExactActivePlate
+                            ? null
+                            : _iniciarSoloLavado,
+                        icon: const Icon(Icons.local_car_wash),
+                        label: const Text('Iniciar solo lavado'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (_filteredSoloLavados.isNotEmpty) ...[
+                  Text(
+                    'Solo lavados activos',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  for (final item in _filteredSoloLavados)
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.local_car_wash),
+                        title: Text('${item['patente'] ?? ''}'),
+                        subtitle: Text(
+                          '${item['tipo_vehiculo_lavado_snapshot'] ?? 'Lavado'} • ${item['duracion_minutos'] ?? 0} min',
+                        ),
+                        trailing: Text('${item['valor_lavado_snapshot'] ?? 0}'),
+                        onTap: () => _finalizarSoloLavado(item),
+                      ),
+                    ),
+                  const SizedBox(height: 12),
+                ],
                 if (_filteredActivos.isEmpty)
                   Card(
                     child: Padding(

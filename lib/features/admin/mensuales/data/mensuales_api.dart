@@ -25,17 +25,21 @@ class MensualesApi {
 
   Future<void> crear({required String patente, int? tarifaMensual}) async {
     await _send(() {
+      final data = <String, dynamic>{'patente': patente};
+      if (tarifaMensual != null) {
+        data['tarifa_mensual'] = tarifaMensual;
+      }
       return client.dio.post(
         '/mensuales',
-        data: {
-          'patente': patente,
-          'tarifa_mensual': ?tarifaMensual,
-        },
+        data: data,
       );
     });
   }
 
-  Future<void> actualizarTarifa({required int idVehiculo, required int tarifaMensual}) async {
+  Future<void> actualizarTarifa({
+    required int idVehiculo,
+    required int tarifaMensual,
+  }) async {
     await _send(() {
       return client.dio.put(
         '/mensuales/$idVehiculo/tarifa',
