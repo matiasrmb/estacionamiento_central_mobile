@@ -23,9 +23,7 @@ class ApiErrorMapper {
         );
 
       case DioExceptionType.sendTimeout:
-        return ApiException(
-          'Tiempo de envío agotado. Reintenta la operación.',
-        );
+        return ApiException('Tiempo de envío agotado. Reintenta la operación.');
 
       case DioExceptionType.receiveTimeout:
         return ApiException(
@@ -38,14 +36,10 @@ class ApiErrorMapper {
         );
 
       case DioExceptionType.badCertificate:
-        return ApiException(
-          'Certificado inválido del servidor.',
-        );
+        return ApiException('Certificado inválido del servidor.');
 
       case DioExceptionType.cancel:
-        return ApiException(
-          'La solicitud fue cancelada.',
-        );
+        return ApiException('La solicitud fue cancelada.');
 
       case DioExceptionType.unknown:
         return ApiException(
@@ -65,39 +59,88 @@ class ApiErrorMapper {
         return ApiException('Solicitud inválida.', statusCode: status);
 
       case 401:
-        return ApiException('Credenciales inválidas o sesión expirada.', statusCode: status);
+        return ApiException(
+          'Credenciales inválidas o sesión expirada.',
+          statusCode: status,
+        );
 
       case 403:
-        return ApiException('No tienes permisos para realizar esta acción.', statusCode: status);
+        return ApiException(
+          'No tienes permisos para realizar esta acción.',
+          statusCode: status,
+        );
 
       case 404:
-        return ApiException('Recurso no encontrado. Verifica la ruta del servidor.', statusCode: status);
+        return ApiException(
+          'Recurso no encontrado. Verifica la ruta del servidor.',
+          statusCode: status,
+        );
 
       case 405:
-        return ApiException('Método no permitido por la API.', statusCode: status);
+        return ApiException(
+          'Método no permitido por la API.',
+          statusCode: status,
+        );
 
       case 406:
-        return ApiException('La API rechazó el formato de la solicitud.', statusCode: status);
+        return ApiException(
+          'La API rechazó el formato de la solicitud.',
+          statusCode: status,
+        );
 
       case 409:
         // Aquí intentamos rescatar mensajes útiles del backend
+        if (body.contains('Solo lavado no tiene precios configurados') ||
+            body.contains(
+              'Solo lavado no tiene precios activos configurados',
+            )) {
+          return ApiException(
+            'Solo lavado no tiene precios activos configurados. Configurá o activá un precio/tipo de lavado en Configuración para Solo lavado.',
+            statusCode: status,
+          );
+        }
         if (body.contains('INGRESO_YA_SALIO')) {
-          return ApiException('Ese ingreso ya fue cerrado.', statusCode: status);
+          return ApiException(
+            'Ese ingreso ya fue cerrado.',
+            statusCode: status,
+          );
         }
         if (body.contains('PLATE_ALREADY_ACTIVE')) {
-          return ApiException('La patente ya tiene un ingreso activo.', statusCode: status);
+          return ApiException(
+            'La patente ya tiene un ingreso activo.',
+            statusCode: status,
+          );
         }
-        return ApiException('Conflicto de datos. Revisa el estado actual del registro.', statusCode: status);
+        return ApiException(
+          'Conflicto de datos. Revisa el estado actual del registro.',
+          statusCode: status,
+        );
 
       case 422:
-        return ApiException('Datos inválidos o incompletos.', statusCode: status);
+        return ApiException(
+          'Datos inválidos o incompletos.',
+          statusCode: status,
+        );
 
       case 500:
         return ApiException('Error interno del servidor.', statusCode: status);
 
+      case 503:
+        if (body.contains('Solo lavado')) {
+          return ApiException(
+            'Solo lavado no está disponible: no se pudo actualizar la base de datos. Lavados vinculados y baño siguen disponibles.',
+            statusCode: status,
+          );
+        }
+        return ApiException(
+          'Servicio no disponible. Reintenta en unos minutos.',
+          statusCode: status,
+        );
+
       default:
         return ApiException(
-          'Error del servidor${status != null ? ' ($status)' : ''}. ${body.isNotEmpty ? body : ''}'.trim(),
+          'Error del servidor${status != null ? ' ($status)' : ''}. ${body.isNotEmpty ? body : ''}'
+              .trim(),
           statusCode: status,
         );
     }

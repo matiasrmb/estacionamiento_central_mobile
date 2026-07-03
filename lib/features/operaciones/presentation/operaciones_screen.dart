@@ -19,6 +19,7 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
   late final ActivosApi _activosApi;
   bool _loading = true;
   String? _error;
+  String? _soloLavadoWarning;
   List<dynamic> _activos = [];
   List<Map<String, dynamic>> _soloLavados = [];
   List<Map<String, dynamic>> _categorias = [];
@@ -44,18 +45,29 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _soloLavadoWarning = null;
     });
     try {
       final activos = await _activosApi.listarActivos();
       final categorias = await _api.listarCategoriasLavado();
-      final soloLavados = await _api.listarSoloLavadosActivos();
-      final tiposVehiculoLavado = await _api.listarTiposVehiculoLavado();
+      var soloLavados = <Map<String, dynamic>>[];
+      var tiposVehiculoLavado = <Map<String, dynamic>>[];
+      String? soloLavadoWarning;
+
+      try {
+        soloLavados = await _api.listarSoloLavadosActivos();
+        tiposVehiculoLavado = await _api.listarTiposVehiculoLavado();
+      } catch (e) {
+        soloLavadoWarning = e.toString();
+      }
+
       if (!mounted) return;
       setState(() {
         _activos = activos;
         _soloLavados = soloLavados;
         _categorias = categorias;
         _tiposVehiculoLavado = tiposVehiculoLavado;
+        _soloLavadoWarning = soloLavadoWarning;
       });
     } catch (e) {
       if (!mounted) return;
@@ -220,7 +232,9 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
 
   Future<void> _iniciarSoloLavado() async {
     final patente = normalizePlateInput(_searchCtrl.text);
-    if (patente.isEmpty || _hasExactActivePlate) return;
+    if (patente.isEmpty || _hasExactActivePlate || _soloLavadoWarning != null) {
+      return;
+    }
     final tipo = await _seleccionarTipoVehiculoLavado();
     if (tipo == null) return;
     final id = tipo['id_tipo_vehiculo_lavado'];
@@ -327,6 +341,10 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
                   _MessageBox(text: _error!, isError: true),
                   const SizedBox(height: 12),
                 ],
+                if (_soloLavadoWarning != null) ...[
+                  _MessageBox(text: _soloLavadoWarning!),
+                  const SizedBox(height: 12),
+                ],
                 TextField(
                   controller: _searchCtrl,
                   decoration: const InputDecoration(
@@ -342,7 +360,9 @@ class _OperacionesScreenState extends State<OperacionesScreen> {
                       child: OutlinedButton.icon(
                         onPressed: _hasExactActivePlate
                             ? null
-                            : _iniciarSoloLavado,
+                            : (_soloLavadoWarning == null
+                                ? _iniciarSoloLavado
+                                : null),
                         icon: const Icon(Icons.local_car_wash),
                         label: const Text('Iniciar solo lavado'),
                       ),
