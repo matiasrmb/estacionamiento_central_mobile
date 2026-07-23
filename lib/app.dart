@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'core/app_services.dart';
 import 'features/ingreso/presentation/ingreso_screen.dart';
 import 'features/salida/presentation/activos_salida_screen.dart';
 import 'features/bootstrap/presentation/bootstrap_screen.dart';
@@ -33,7 +34,14 @@ class PlaceholderScreen extends StatelessWidget {
 }
 
 class App extends StatelessWidget {
-  App({super.key});
+  App({super.key}) {
+    AppServices.I.setUnauthorizedHandler(() async {
+      final currentPath = _router.routeInformationProvider.value.uri.path;
+      if (currentPath != '/login') {
+        _router.go('/login');
+      }
+    });
+  }
 
   final _router = GoRouter(
     routes: [

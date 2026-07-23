@@ -5,15 +5,16 @@ import 'config.dart';
 class ApiClient {
   final Dio dio;
   final SecureStore store;
+  Future<void> Function()? onUnauthorized;
 
-  ApiClient({required this.store})
-      : dio = Dio(
-          BaseOptions(
-            baseUrl: '', // se setea en init()
-            connectTimeout: AppConfig.connectTimeout,
-            receiveTimeout: AppConfig.receiveTimeout,
-          ),
-        ) {
+  ApiClient({required this.store, this.onUnauthorized})
+    : dio = Dio(
+        BaseOptions(
+          baseUrl: '', // se setea en init()
+          connectTimeout: AppConfig.connectTimeout,
+          receiveTimeout: AppConfig.receiveTimeout,
+        ),
+      ) {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
@@ -24,6 +25,14 @@ class ApiClient {
           options.headers['Accept'] = 'application/json';
 
           return handler.next(options);
+        },
+        onError: (e, handler) async {
+          if (e.response?.statusCode == 401) {
+            await store.clear();
+            await onUnauthorized?.call();
+          }
+
+          return handler.next(e);
         },
       ),
     );

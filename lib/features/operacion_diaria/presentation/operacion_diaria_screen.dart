@@ -184,8 +184,65 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
   }
 
   Future<void> _registrarSalidaInline(OperacionDiariaRecord record) async {
+    if (_actionLoading) return;
+    setState(() {
+      _actionLoading = true;
+      _error = null;
+    });
+
+    Map<String, dynamic> preview;
+    try {
+      preview = await _inlineActions.previsualizarSalidaDesdeBusqueda(record);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _error = 'No se pudo completar la acción: $e');
+      return;
+    } finally {
+      if (mounted) setState(() => _actionLoading = false);
+    }
+
+    if (!mounted) return;
+    final confirmed = await _confirmarPreviewSalida(record, preview);
+    if (!mounted || confirmed != true) return;
+
     await _runInlineAction(
-      () => _inlineActions.registrarSalidaDesdeBusqueda(record),
+      () => _inlineActions.confirmarSalidaDesdeBusqueda(record, preview),
+    );
+  }
+
+  Future<bool?> _confirmarPreviewSalida(
+    OperacionDiariaRecord record,
+    Map<String, dynamic> preview,
+  ) {
+    final detalle = (preview['detalle'] ?? '').toString().trim();
+    final minutos = preview['minutos'];
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar salida'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _SalidaPreviewLine(label: 'Patente', value: record.patente),
+            _SalidaPreviewLine(label: 'Monto', value: _money(preview['monto'])),
+            if (minutos != null)
+              _SalidaPreviewLine(label: 'Minutos', value: '$minutos min'),
+            if (detalle.isNotEmpty)
+              _SalidaPreviewLine(label: 'Detalle', value: detalle),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirmar salida'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -668,6 +725,21 @@ class _MessageBox extends StatelessWidget {
         text,
         style: TextStyle(color: isError ? AppColors.danger : AppColors.text),
       ),
+    );
+  }
+}
+
+class _SalidaPreviewLine extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _SalidaPreviewLine({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text('$label: $value'),
     );
   }
 }

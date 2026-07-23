@@ -158,10 +158,42 @@ void main() {
       },
     );
 
+    test('previews salida inline without confirming or refreshing', () async {
+      var previewedId = 0;
+      var confirmedId = 0;
+      var refreshed = false;
+      final actions = OperacionDiariaInlineActions(
+        registrarIngreso: (_) async => <String, dynamic>{},
+        previewSalida: (idIngreso) async {
+          previewedId = idIngreso;
+          return {'monto': 1200, 'minutos': 45, 'detalle': 'Estadía'};
+        },
+        confirmarSalida: (idIngreso) async {
+          confirmedId = idIngreso;
+          return {'ok': true};
+        },
+        iniciarLavado: (idIngreso, categoria) async {},
+        finalizarLavado: (_) async {},
+        refresh: () async => refreshed = true,
+      );
+
+      final preview = await actions.previsualizarSalidaDesdeBusqueda(
+        OperacionDiariaRecord(
+          idIngreso: 77,
+          patente: 'ABC123',
+          fechaHoraIngreso: DateTime.parse('2026-07-01T09:00:00'),
+        ),
+      );
+
+      expect(previewedId, 77);
+      expect(preview['monto'], 1200);
+      expect(confirmedId, 0);
+      expect(refreshed, isFalse);
+    });
+
     test(
-      'confirms salida inline with existing active record and refreshes',
+      'confirms salida inline only after preview is explicitly accepted',
       () async {
-        var previewedId = 0;
         var confirmedId = 0;
         var printedPlate = '';
         Map<String, dynamic>? printedConfirm;
@@ -170,10 +202,7 @@ void main() {
         var refreshed = false;
         final actions = OperacionDiariaInlineActions(
           registrarIngreso: (_) async => <String, dynamic>{},
-          previewSalida: (idIngreso) async {
-            previewedId = idIngreso;
-            return {'monto': 1200};
-          },
+          previewSalida: (_) async => throw StateError('preview already shown'),
           confirmarSalida: (idIngreso) async {
             confirmedId = idIngreso;
             return {'ok': true};
@@ -197,15 +226,16 @@ void main() {
           refresh: () async => refreshed = true,
         );
 
-        final result = await actions.registrarSalidaDesdeBusqueda(
+        final preview = {'monto': 1200};
+        final result = await actions.confirmarSalidaDesdeBusqueda(
           OperacionDiariaRecord(
             idIngreso: 77,
             patente: 'ABC123',
             fechaHoraIngreso: DateTime.parse('2026-07-01T09:00:00'),
           ),
+          preview,
         );
 
-        expect(previewedId, 77);
         expect(confirmedId, 77);
         expect(printedPlate, 'ABC123');
         expect(printedConfirm?['ok'], isTrue);

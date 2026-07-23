@@ -10,16 +10,24 @@ class AppServices {
   late ApiClient client;
 
   bool _initialized = false;
+  Future<void> Function()? _onUnauthorized;
 
   /// Inicializa servicios base una sola vez.
   Future<void> init() async {
     if (_initialized) return;
 
     store = SecureStore();
-    client = ApiClient(store: store);
+    client = ApiClient(store: store, onUnauthorized: _onUnauthorized);
     await client.init();
 
     _initialized = true;
+  }
+
+  void setUnauthorizedHandler(Future<void> Function()? handler) {
+    _onUnauthorized = handler;
+    if (_initialized) {
+      client.onUnauthorized = handler;
+    }
   }
 
   /// Relee baseUrl desde storage y lo aplica al Dio del cliente.
@@ -30,6 +38,7 @@ class AppServices {
       return;
     }
 
-    await client.init(); // re-lee baseUrl desde store y setea dio.options.baseUrl
+    // re-lee baseUrl desde store y setea dio.options.baseUrl
+    await client.init();
   }
 }

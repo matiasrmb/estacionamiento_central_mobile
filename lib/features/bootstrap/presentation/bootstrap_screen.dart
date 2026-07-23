@@ -3,6 +3,22 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/storage.dart';
 
+String resolveBootstrapRoute({
+  required String? baseUrl,
+  required String? token,
+  required String? role,
+}) {
+  if (baseUrl == null || baseUrl.trim().isEmpty) {
+    return '/settings';
+  }
+
+  if (token != null && token.isNotEmpty && role != null && role.isNotEmpty) {
+    return '/home';
+  }
+
+  return '/login';
+}
+
 class BootstrapScreen extends StatefulWidget {
   const BootstrapScreen({super.key});
 
@@ -19,14 +35,14 @@ class _BootstrapScreenState extends State<BootstrapScreen> {
 
   Future<void> _boot() async {
     await Future.delayed(const Duration(milliseconds: 150));
-    final token = await SecureStore().readToken();
-    final role = await SecureStore().readRole();
+    final store = SecureStore();
+    final baseUrl = await store.readBaseUrl();
+    final token = await store.readToken();
+    final role = await store.readRole();
     if (!mounted) return;
-    if (token != null && token.isNotEmpty && role != null && role.isNotEmpty) {
-      context.go('/home');
-      return;
-    }
-    context.go('/login');
+    context.go(
+      resolveBootstrapRoute(baseUrl: baseUrl, token: token, role: role),
+    );
   }
 
   @override

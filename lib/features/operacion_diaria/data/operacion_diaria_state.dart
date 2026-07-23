@@ -86,10 +86,16 @@ class OperacionDiariaInlineActions {
     );
   }
 
-  Future<OperacionDiariaInlineResult> registrarSalidaDesdeBusqueda(
+  Future<Map<String, dynamic>> previsualizarSalidaDesdeBusqueda(
     OperacionDiariaRecord record,
+  ) {
+    return previewSalida(record.idIngreso);
+  }
+
+  Future<OperacionDiariaInlineResult> confirmarSalidaDesdeBusqueda(
+    OperacionDiariaRecord record,
+    Map<String, dynamic> preview,
   ) async {
-    final preview = await previewSalida(record.idIngreso);
     final confirm = await confirmarSalida(record.idIngreso);
     var message = 'Salida confirmada';
     if (isPrinterAvailable?.call() == true && printSalida != null) {
