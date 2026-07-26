@@ -71,12 +71,16 @@ class OperacionDiariaInlineActions {
     }
 
     final response = await registrarIngreso(patente);
-    var message = 'Ingreso registrado';
+    var message =
+        'Ingreso registrado. Comprobante durable enviado a PC / Print Agent.';
     if (isPrinterAvailable?.call() == true && printIngreso != null) {
       try {
         await printIngreso!(patente: patente, response: response);
+        message =
+            'Ingreso registrado. Comprobante durable enviado a PC / Print Agent. Copia local Sunmi impresa.';
       } catch (e) {
-        message = 'Ingreso OK, pero Sunmi falló: $e';
+        message =
+            'Ingreso registrado. Comprobante durable enviado a PC / Print Agent. No se pudo imprimir la copia local Sunmi: $e';
       }
     }
     await refresh();
@@ -97,7 +101,8 @@ class OperacionDiariaInlineActions {
     Map<String, dynamic> preview,
   ) async {
     final confirm = await confirmarSalida(record.idIngreso);
-    var message = 'Salida confirmada';
+    var message =
+        'Salida confirmada. Comprobante durable enviado a PC / Print Agent.';
     if (isPrinterAvailable?.call() == true && printSalida != null) {
       try {
         await printSalida!(
@@ -106,8 +111,11 @@ class OperacionDiariaInlineActions {
           previewFallback: preview,
           horaIngreso: record.fechaHoraIngreso.toString(),
         );
+        message =
+            'Salida confirmada. Comprobante durable enviado a PC / Print Agent. Copia local Sunmi impresa.';
       } catch (e) {
-        message = 'Salida OK, pero Sunmi falló: $e';
+        message =
+            'Salida confirmada. Comprobante durable enviado a PC / Print Agent. No se pudo imprimir la copia local Sunmi: $e';
       }
     }
     await refresh();

@@ -33,6 +33,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
 
   bool _sunmiAvailable = false;
   bool _imprimirSunmi = false;
+  String? _sunmiCopyStatus;
 
   @override
   void initState() {
@@ -53,7 +54,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
     if (!mounted) return;
     setState(() {
       _sunmiAvailable = _sunmi.isReady;
-      _imprimirSunmi = _sunmiAvailable; // automático si es Sunmi
+      _imprimirSunmi = false;
     });
 
     await _loadActivos();
@@ -168,6 +169,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
     setState(() {
       _confirming = true;
       _errorConfirm = null;
+      _sunmiCopyStatus = null;
     });
 
     try {
@@ -183,10 +185,20 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
             horaIngreso: _getHoraIngreso(sel),
           );
           await _sunmi.printLines(lines);
+          if (!mounted) return;
+          setState(() => _sunmiCopyStatus = 'Copia local Sunmi impresa.');
         } catch (e) {
           if (mounted) {
+            setState(
+              () => _sunmiCopyStatus =
+                  'No se pudo imprimir la copia local Sunmi: $e',
+            );
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Salida OK, pero Sunmi falló: $e')),
+              const SnackBar(
+                content: Text(
+                  'Salida confirmada. La copia local Sunmi no reemplaza el comprobante de PC.',
+                ),
+              ),
             );
           }
         }
@@ -383,9 +395,18 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                           onChanged: (v) {
                             setState(() => _imprimirSunmi = v ?? false);
                           },
-                          title: const Text('Imprimir también en Sunmi'),
+                          title: const Text(
+                            'Imprimir copia local opcional en Sunmi',
+                          ),
+                          subtitle: const Text(
+                            'No reemplaza el comprobante durable enviado a PC / Print Agent.',
+                          ),
                           controlAffinity: ListTileControlAffinity.leading,
                         ),
+                      if (_sunmiCopyStatus != null) ...[
+                        _kv('Copia local Sunmi', _sunmiCopyStatus!),
+                        const SizedBox(height: 8),
+                      ],
                       if (_errorConfirm != null) ...[
                         _MessageBox(text: _errorConfirm!, isError: true),
                         const SizedBox(height: 8),

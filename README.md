@@ -1,17 +1,21 @@
-# estacionamiento_central_mobile
+# Estacionamiento Central Mobile
 
-A new Flutter project.
+Aplicación Flutter para la operación móvil de Estacionamiento Central.
 
-## Getting Started
+## Impresión de comprobantes
 
-This project is a starting point for a Flutter application.
+El comprobante durable y canónico se crea en la API como trabajo `PC_PDF` y
+lo procesa la PC con Print Agent. Esta es la ruta que debe consultarse para
+auditoría, reimpresiones y entrega del comprobante.
 
-A few resources to get you started if this is your first Flutter project:
+La impresora integrada Sunmi sólo genera una copia local opcional. Su intento
+no crea una cola durable, no se audita y una falla no revierte ni bloquea el
+ingreso o la salida ya registrados. La aplicación nunca solicita
+`imprimir_sunmi: true` a la API.
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+## Desarrollo
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```sh
+flutter analyze
+flutter test
+```

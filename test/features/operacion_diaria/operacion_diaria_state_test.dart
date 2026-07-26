@@ -153,7 +153,10 @@ void main() {
         expect(printedPlate, 'AB123CD');
         expect(printedResponse?['ingreso']['patente'], 'AB123CD');
         expect(refreshed, isTrue);
-        expect(result.message, 'Ingreso registrado');
+        expect(
+          result.message,
+          'Ingreso registrado. Comprobante durable enviado a PC / Print Agent. Copia local Sunmi impresa.',
+        );
         expect(result.shouldClearPlate, isTrue);
       },
     );
@@ -242,7 +245,10 @@ void main() {
         expect(printedPreview?['monto'], 1200);
         expect(printedHoraIngreso, '2026-07-01 09:00:00.000');
         expect(refreshed, isTrue);
-        expect(result.message, 'Salida confirmada');
+        expect(
+          result.message,
+          'Salida confirmada. Comprobante durable enviado a PC / Print Agent. Copia local Sunmi impresa.',
+        );
         expect(result.shouldClearPlate, isTrue);
       },
     );
@@ -329,48 +335,51 @@ void main() {
       },
     );
 
-    test(
-      'keeps ingreso success message when Sunmi is unavailable or fails',
-      () async {
-        final unavailablePrinter = OperacionDiariaInlineActions(
-          registrarIngreso: (patente) async => {
-            'ingreso': {'patente': patente},
-          },
-          previewSalida: (_) async => <String, dynamic>{},
-          confirmarSalida: (_) async => <String, dynamic>{},
-          iniciarLavado: (_, _) async {},
-          finalizarLavado: (_) async {},
-          printIngreso: ({required patente, required response}) async {
-            throw Exception('should not print');
-          },
-          isPrinterAvailable: () => false,
-          refresh: () async {},
-        );
-        final failingPrinter = OperacionDiariaInlineActions(
-          registrarIngreso: (patente) async => {
-            'ingreso': {'patente': patente},
-          },
-          previewSalida: (_) async => <String, dynamic>{},
-          confirmarSalida: (_) async => <String, dynamic>{},
-          iniciarLavado: (_, _) async {},
-          finalizarLavado: (_) async {},
-          printIngreso: ({required patente, required response}) async {
-            throw Exception('printer offline');
-          },
-          isPrinterAvailable: () => true,
-          refresh: () async {},
-        );
+    test('reports Sunmi as a non-durable local copy when it fails', () async {
+      final unavailablePrinter = OperacionDiariaInlineActions(
+        registrarIngreso: (patente) async => {
+          'ingreso': {'patente': patente},
+        },
+        previewSalida: (_) async => <String, dynamic>{},
+        confirmarSalida: (_) async => <String, dynamic>{},
+        iniciarLavado: (_, _) async {},
+        finalizarLavado: (_) async {},
+        printIngreso: ({required patente, required response}) async {
+          throw Exception('should not print');
+        },
+        isPrinterAvailable: () => false,
+        refresh: () async {},
+      );
+      final failingPrinter = OperacionDiariaInlineActions(
+        registrarIngreso: (patente) async => {
+          'ingreso': {'patente': patente},
+        },
+        previewSalida: (_) async => <String, dynamic>{},
+        confirmarSalida: (_) async => <String, dynamic>{},
+        iniciarLavado: (_, _) async {},
+        finalizarLavado: (_) async {},
+        printIngreso: ({required patente, required response}) async {
+          throw Exception('printer offline');
+        },
+        isPrinterAvailable: () => true,
+        refresh: () async {},
+      );
 
-        final unavailable = await unavailablePrinter
-            .registrarIngresoDesdeBusqueda('abc123');
-        final failed = await failingPrinter.registrarIngresoDesdeBusqueda(
-          'abc123',
-        );
+      final unavailable = await unavailablePrinter
+          .registrarIngresoDesdeBusqueda('abc123');
+      final failed = await failingPrinter.registrarIngresoDesdeBusqueda(
+        'abc123',
+      );
 
-        expect(unavailable.message, 'Ingreso registrado');
-        expect(failed.message, contains('Ingreso OK, pero Sunmi falló'));
-        expect(failed.shouldClearPlate, isTrue);
-      },
-    );
+      expect(
+        unavailable.message,
+        'Ingreso registrado. Comprobante durable enviado a PC / Print Agent.',
+      );
+      expect(
+        failed.message,
+        contains('No se pudo imprimir la copia local Sunmi'),
+      );
+      expect(failed.shouldClearPlate, isTrue);
+    });
   });
 }

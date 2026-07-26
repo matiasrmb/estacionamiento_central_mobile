@@ -30,23 +30,23 @@ class SunmiPrinterService {
     }
 
     try {
-      debugPrint('SUNMI init -> getStatus()');
+      debugPrint('SUNMI local copy init -> getStatus()');
       await SunmiConfig.getStatus();
 
       _ready = true;
       _lastError = null;
-      debugPrint('SUNMI init -> OK');
+      debugPrint('SUNMI local copy init -> OK');
     } on PlatformException catch (e, st) {
       _ready = false;
       _lastError = _isMissingSunmiPrinter(e)
           ? 'Este dispositivo no tiene impresora Sunmi integrada.'
           : e.message ?? e.toString();
-      debugPrint('SUNMI init -> ERROR: $_lastError');
+      debugPrint('SUNMI local copy init -> ERROR: $_lastError');
       debugPrint('$st');
     } catch (e, st) {
       _ready = false;
       _lastError = e.toString();
-      debugPrint('SUNMI init -> ERROR: $e');
+      debugPrint('SUNMI local copy init -> ERROR: $e');
       debugPrint('$st');
     }
   }
@@ -69,7 +69,7 @@ class SunmiPrinterService {
     }
 
     try {
-      debugPrint('SUNMI print -> líneas: ${lines.length}');
+      debugPrint('SUNMI local copy print -> líneas: ${lines.length}');
       for (final line in lines) {
         if (line.trim().isEmpty) {
           await SunmiPrinter.lineWrap(1);
@@ -97,16 +97,16 @@ class SunmiPrinterService {
       try {
         await SunmiPrinter.cutPaper();
       } catch (e) {
-        debugPrint('SUNMI cutPaper -> no soportado o falló: $e');
+        debugPrint('SUNMI local copy cutPaper -> no soportado o falló: $e');
       }
 
-      debugPrint('SUNMI print -> OK');
+      debugPrint('SUNMI local copy print -> OK');
     } catch (e, st) {
       _ready = !_isMissingSunmiPrinter(e);
       _lastError = _isMissingSunmiPrinter(e)
           ? 'Este dispositivo no tiene impresora Sunmi integrada.'
           : e.toString();
-      debugPrint('SUNMI print -> ERROR: $e');
+      debugPrint('SUNMI local copy print -> ERROR: $e');
       debugPrint('$st');
       rethrow;
     }
@@ -114,7 +114,7 @@ class SunmiPrinterService {
 
   Future<void> printTest() async {
     await printLines([
-      'PRUEBA SUNMI',
+      'PRUEBA COPIA LOCAL SUNMI',
       'Si ves este ticket, la impresora funciona.',
       '------------------------',
       'OK',

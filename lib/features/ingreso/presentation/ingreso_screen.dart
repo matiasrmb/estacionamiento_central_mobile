@@ -26,6 +26,7 @@ class _IngresoScreenState extends State<IngresoScreen> {
   late final IngresoRepository _repo;
   final SunmiPrinterService _sunmi = SunmiPrinterService();
   bool _sunmiAvailable = false;
+  String? _sunmiCopyStatus;
 
   @override
   void initState() {
@@ -61,6 +62,7 @@ class _IngresoScreenState extends State<IngresoScreen> {
     setState(() {
       _error = null;
       _result = null;
+      _sunmiCopyStatus = null;
       _loading = true;
     });
 
@@ -73,7 +75,7 @@ class _IngresoScreenState extends State<IngresoScreen> {
       setState(() => _result = data);
       _patenteCtrl.clear();
 
-      // Si este dispositivo tiene impresora Sunmi disponible, imprimir automático
+      // This is a best-effort local copy; the API has already created the durable receipt.
       if (_sunmiAvailable) {
         try {
           final lines = TicketFormatter.ingresoFromResponse(
@@ -81,12 +83,25 @@ class _IngresoScreenState extends State<IngresoScreen> {
             response: data,
           );
           await _sunmi.printLines(lines);
+          if (!mounted) return;
+          setState(() => _sunmiCopyStatus = 'Copia local Sunmi impresa.');
         } catch (e) {
           if (!mounted) return;
+          setState(
+            () => _sunmiCopyStatus =
+                'No se pudo imprimir la copia local Sunmi: $e',
+          );
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Ingreso OK, pero Sunmi falló: $e')),
+            const SnackBar(
+              content: Text(
+                'Ingreso registrado. La copia local Sunmi no reemplaza el comprobante de PC.',
+              ),
+            ),
           );
         }
+      } else {
+        _sunmiCopyStatus =
+            'Copia local Sunmi no disponible en este dispositivo.';
       }
 
       if (!mounted) return;
@@ -213,8 +228,15 @@ class _IngresoScreenState extends State<IngresoScreen> {
                         ingresoData?['hora_ingreso']?.toString() ?? '',
                       ),
                       if (result['print'] != null)
-                        _kv('Impresión PC', 'Creada'),
-                      _kv('Sunmi disponible', _sunmiAvailable ? 'Sí' : 'No'),
+                        _kv(
+                          'Comprobante durable',
+                          'Enviado a PC / Print Agent',
+                        ),
+                      _kv(
+                        'Copia local Sunmi',
+                        _sunmiCopyStatus ??
+                            (_sunmiAvailable ? 'Pendiente' : 'No disponible'),
+                      ),
                     ],
                   ),
                 ),
