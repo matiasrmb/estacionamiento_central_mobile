@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -21,7 +23,10 @@ class OperacionDiariaScreen extends StatefulWidget {
   State<OperacionDiariaScreen> createState() => _OperacionDiariaScreenState();
 }
 
-class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
+class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
+    with WidgetsBindingObserver {
+  static const _activeRecordsRefreshInterval = Duration(seconds: 30);
+
   final _searchCtrl = TextEditingController();
   final _searchFocusNode = FocusNode();
   late final ActivosApi _activosApi;
@@ -33,6 +38,8 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
 
   bool _loading = true;
   bool _actionLoading = false;
+  bool _dialogOpen = false;
+  bool _isForeground = true;
   bool _sunmiAvailable = false;
   String? _error;
   List<OperacionDiariaRecord> _records = [];
@@ -42,10 +49,13 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
     primaryAction: OperacionDiariaAction.sinBusqueda,
     message: 'Ingresá una patente para buscar.',
   );
+  Timer? _refreshTimer;
+  Future<void>? _loadInFlight;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final client = AppServices.I.client;
     _activosApi = ActivosApi(client);
     _operacionesApi = OperacionesApi(client);
@@ -99,20 +109,71 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
       setState(() => _sunmiAvailable = _sunmi.isReady);
     }
     await _load();
+    if (mounted && _isForeground) _startAutoRefresh();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _refreshTimer?.cancel();
     _searchCtrl.dispose();
     _searchFocusNode.dispose();
     super.dispose();
   }
 
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (_isForeground) return;
+      _isForeground = true;
+      _startAutoRefresh();
+      _refreshActiveRecords();
+      return;
+    }
+
+    _isForeground = false;
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
+  }
+
+  void _startAutoRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(
+      _activeRecordsRefreshInterval,
+      (_) => _refreshActiveRecords(),
+    );
+  }
+
+  Future<void> _refreshActiveRecords() async {
+    if (!mounted ||
+        !_isForeground ||
+        _actionLoading ||
+        _dialogOpen ||
+        _loadInFlight != null) {
+      return;
+    }
+    await _load(showLoading: false);
+  }
+
+  Future<void> _load({bool showLoading = true}) {
+    final inFlight = _loadInFlight;
+    if (inFlight != null) return inFlight;
+
+    final request = _performLoad(showLoading: showLoading);
+    _loadInFlight = request;
+    request.whenComplete(() {
+      if (identical(_loadInFlight, request)) _loadInFlight = null;
     });
+    return request;
+  }
+
+  Future<void> _performLoad({required bool showLoading}) async {
+    if (showLoading) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
     try {
       final activos = await _activosApi.listarActivos();
       final categorias = await _operacionesApi.listarCategoriasLavado();
@@ -120,13 +181,25 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
       setState(() {
         _records = recordsFromActivos(activos);
         _categoriasLavado = categorias;
+        _error = null;
         _refreshDecision();
       });
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = 'No se pudo cargar operación diaria: $e');
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && showLoading) setState(() => _loading = false);
+    }
+  }
+
+  Future<T?> _showDialogWhileRefreshingIsPaused<T>({
+    required WidgetBuilder builder,
+  }) async {
+    _dialogOpen = true;
+    try {
+      return await showDialog<T>(context: context, builder: builder);
+    } finally {
+      _dialogOpen = false;
     }
   }
 
@@ -218,8 +291,7 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
   ) {
     final detalle = (preview['detalle'] ?? '').toString().trim();
     final minutos = preview['minutos'];
-    return showDialog<bool>(
-      context: context,
+    return _showDialogWhileRefreshingIsPaused<bool>(
       builder: (context) => AlertDialog(
         title: const Text('Confirmar salida'),
         content: Column(
@@ -524,6 +596,7 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
   }
 
   void _openActions(OperacionDiariaRecord record) {
+    _dialogOpen = true;
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -573,7 +646,7 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
           ),
         ),
       ),
-    );
+    ).whenComplete(() => _dialogOpen = false);
   }
 
   @override
