@@ -107,7 +107,7 @@ class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
           ? const Center(
               child: Padding(
                 padding: EdgeInsets.all(16),
-                child: Text('No tenés permisos para administrar mensuales.'),
+                child: Text('No tienes permisos para administrar mensuales.'),
               ),
             )
           : ListView(
