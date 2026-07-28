@@ -689,9 +689,7 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
                         : AppColors.primary,
                   ),
                   title: Text(record.patente),
-                  subtitle: Text(
-                    record.enLavado ? 'En lavado' : 'Disponible para salida',
-                  ),
+                  subtitle: Text(operationRecordSubtitle(record)),
                   trailing: const Icon(Icons.more_horiz),
                   onTap: () => _openActions(record),
                 ),

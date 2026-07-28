@@ -170,12 +170,20 @@ class OperacionDiariaRecord {
   final String patente;
   final DateTime fechaHoraIngreso;
   final bool enLavado;
+  final bool enEspera;
+  final int montoAcumulado;
+  final int minutosCobrables;
+  final DateTime? calculadoA;
 
   const OperacionDiariaRecord({
     required this.idIngreso,
     required this.patente,
     required this.fechaHoraIngreso,
     this.enLavado = false,
+    this.enEspera = false,
+    this.montoAcumulado = 0,
+    this.minutosCobrables = 0,
+    this.calculadoA,
   });
 
   factory OperacionDiariaRecord.fromMap(Map<dynamic, dynamic> item) {
@@ -186,6 +194,8 @@ class OperacionDiariaRecord {
         item['horaIngreso'] ??
         item['ingreso_at'];
     final lavado = item['en_lavado'];
+    final espera = item['en_espera'];
+    final calculadoA = item['calculado_a'];
 
     return OperacionDiariaRecord(
       idIngreso: id is int ? id : int.tryParse('$id') ?? 0,
@@ -195,8 +205,32 @@ class OperacionDiariaRecord {
           DateTime.tryParse('$rawDate') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       enLavado: lavado == true || lavado == 1 || lavado == '1',
+      enEspera: espera == true || espera == 1 || espera == '1',
+      montoAcumulado: _parseInt(item['monto_acumulado']),
+      minutosCobrables: _parseInt(item['minutos_cobrables']),
+      calculadoA: calculadoA == null ? null : DateTime.tryParse('$calculadoA'),
     );
   }
+}
+
+int _parseInt(dynamic value) =>
+    value is int ? value : int.tryParse('$value') ?? 0;
+
+String formatOperationIngresoTime(DateTime value) {
+  final local = value.toLocal();
+  return '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+}
+
+String formatOperationAmount(int value) => '\$${value.round()}';
+
+String operationRecordSubtitle(OperacionDiariaRecord record) {
+  final indicators = <String>[
+    'Ingreso ${formatOperationIngresoTime(record.fechaHoraIngreso)}',
+    formatOperationAmount(record.montoAcumulado),
+    if (record.enEspera) 'En espera',
+    if (record.enLavado) 'En lavado',
+  ];
+  return indicators.join(' • ');
 }
 
 class PlateSearchDecision {

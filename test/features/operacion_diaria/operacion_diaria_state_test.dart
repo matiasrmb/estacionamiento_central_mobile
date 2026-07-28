@@ -1,8 +1,63 @@
 import 'package:estacionamiento_central_mobile/features/operacion_diaria/data/operacion_diaria_state.dart';
+import 'package:estacionamiento_central_mobile/features/salida/data/activos_api.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('operación diaria state', () {
+    test('normalizes missing enriched fields from older activos responses', () {
+      final items = ActivosApi.parseItems([
+        {'id_ingreso': 77},
+      ]);
+
+      expect(items.single['monto_acumulado'], 0);
+      expect(items.single['minutos_cobrables'], 0);
+      expect(items.single['calculado_a'], isNull);
+    });
+
+    test(
+      'parses enriched activos fields and formats the active card subtitle',
+      () {
+        final record = OperacionDiariaRecord.fromMap({
+          'id_ingreso': '77',
+          'patente': 'ABC123',
+          'fecha_hora_ingreso': '2026-07-01T09:05:00',
+          'en_lavado': 1,
+          'en_espera': true,
+          'monto_acumulado': '1250',
+          'minutos_cobrables': '45',
+          'calculado_a': '2026-07-01T09:50:00',
+        });
+
+        expect(record.idIngreso, 77);
+        expect(record.enLavado, isTrue);
+        expect(record.enEspera, isTrue);
+        expect(record.montoAcumulado, 1250);
+        expect(record.minutosCobrables, 45);
+        expect(record.calculadoA, DateTime.parse('2026-07-01T09:50:00'));
+        expect(
+          operationRecordSubtitle(record),
+          'Ingreso 09:05 • \$1250 • En espera • En lavado',
+        );
+      },
+    );
+
+    test(
+      'defaults missing enriched activos fields for older API responses',
+      () {
+        final record = OperacionDiariaRecord.fromMap({
+          'id_ingreso': 78,
+          'patente': 'OLD123',
+          'fecha_hora_ingreso': '2026-07-01T10:00:00',
+        });
+
+        expect(record.montoAcumulado, 0);
+        expect(record.minutosCobrables, 0);
+        expect(record.calculadoA, isNull);
+        expect(record.enEspera, isFalse);
+        expect(operationRecordSubtitle(record), 'Ingreso 10:00 • \$0');
+      },
+    );
+
     test('orders operation records newest-first by ingreso timestamp', () {
       final records = orderOperationRecordsNewestFirst([
         OperacionDiariaRecord(
