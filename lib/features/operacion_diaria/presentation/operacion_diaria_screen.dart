@@ -23,6 +23,7 @@ class OperacionDiariaScreen extends StatefulWidget {
 
 class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
   final _searchCtrl = TextEditingController();
+  final _searchFocusNode = FocusNode();
   late final ActivosApi _activosApi;
   late final OperacionesApi _operacionesApi;
   late final IngresoRepository _ingresoRepository;
@@ -103,6 +104,7 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -608,15 +610,60 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 10),
-                  TextField(
-                    controller: _searchCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Patente',
-                      prefixIcon: Icon(Icons.search),
+                  RawAutocomplete<OperacionDiariaRecord>(
+                    textEditingController: _searchCtrl,
+                    focusNode: _searchFocusNode,
+                    displayStringForOption: (record) => record.patente,
+                    optionsBuilder: (value) =>
+                        matchingOpenPlateSuggestions(_records, value.text),
+                    onSelected: (record) {
+                      _searchCtrl.value = TextEditingValue(
+                        text: record.patente,
+                        selection: TextSelection.collapsed(
+                          offset: record.patente.length,
+                        ),
+                      );
+                      setState(_refreshDecision);
+                    },
+                    fieldViewBuilder:
+                        (context, controller, focusNode, onFieldSubmitted) =>
+                            TextField(
+                              controller: controller,
+                              focusNode: focusNode,
+                              decoration: const InputDecoration(
+                                labelText: 'Patente',
+                                prefixIcon: Icon(Icons.search),
+                              ),
+                              textInputAction: TextInputAction.search,
+                              onChanged: (_) => setState(_refreshDecision),
+                              onSubmitted: (_) {
+                                onFieldSubmitted();
+                                setState(_refreshDecision);
+                              },
+                            ),
+                    optionsViewBuilder: (context, onSelected, options) => Align(
+                      alignment: Alignment.topLeft,
+                      child: Material(
+                        elevation: 4,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 280),
+                          child: ListView(
+                            padding: EdgeInsets.zero,
+                            shrinkWrap: true,
+                            children: [
+                              for (final record in options)
+                                ListTile(
+                                  title: Text(record.patente),
+                                  subtitle: Text(
+                                    operationRecordSubtitle(record),
+                                  ),
+                                  onTap: () => onSelected(record),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
-                    textInputAction: TextInputAction.search,
-                    onChanged: (_) => setState(_refreshDecision),
-                    onSubmitted: (_) => setState(_refreshDecision),
                   ),
                   const SizedBox(height: 10),
                   Text(_decision.message),

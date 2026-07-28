@@ -248,7 +248,7 @@ class PlateSearchDecision {
 }
 
 String normalizePlateInput(String input) =>
-    input.trim().toUpperCase().replaceAll(' ', '');
+    input.trim().toUpperCase().replaceAll(RegExp(r'[\s-]'), '');
 
 List<OperacionDiariaRecord> recordsFromActivos(List<dynamic> items) {
   return orderOperationRecordsNewestFirst(
@@ -276,6 +276,21 @@ List<OperacionDiariaRecord> filterOperationRecordsByPlate(
 ) {
   final normalizedQuery = normalizePlateInput(query);
   if (normalizedQuery.isEmpty) return List<OperacionDiariaRecord>.from(records);
+
+  return records
+      .where(
+        (record) =>
+            normalizePlateInput(record.patente).contains(normalizedQuery),
+      )
+      .toList();
+}
+
+List<OperacionDiariaRecord> matchingOpenPlateSuggestions(
+  List<OperacionDiariaRecord> records,
+  String query,
+) {
+  final normalizedQuery = normalizePlateInput(query);
+  if (normalizedQuery.isEmpty) return const [];
 
   return records
       .where(

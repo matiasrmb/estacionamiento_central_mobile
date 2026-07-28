@@ -167,6 +167,30 @@ void main() {
       },
     );
 
+    test('suggests matching open plates from a normalized typed fragment', () {
+      final records = [
+        OperacionDiariaRecord(
+          idIngreso: 1,
+          patente: 'AA-123 BB',
+          fechaHoraIngreso: DateTime.parse('2026-07-01T08:00:00'),
+        ),
+        OperacionDiariaRecord(
+          idIngreso: 2,
+          patente: 'CC999DD',
+          fechaHoraIngreso: DateTime.parse('2026-07-01T10:00:00'),
+        ),
+      ];
+
+      expect(
+        matchingOpenPlateSuggestions(
+          records,
+          'a-123',
+        ).map((item) => item.patente),
+        ['AA-123 BB'],
+      );
+      expect(matchingOpenPlateSuggestions(records, ''), isEmpty);
+    });
+
     test(
       'registers ingreso inline and refreshes records without navigation',
       () async {
