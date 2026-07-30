@@ -114,13 +114,20 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
     return false;
   }
 
+  bool _isNochePendiente(dynamic item) {
+    if (item is Map) {
+      final v = item['modo_noche'];
+      return v == true || v == 1 || v == '1';
+    }
+    return false;
+  }
+
   Future<void> _selectAndPreview(dynamic item) async {
-    if (_isEnLavado(item)) {
+    if (_isNochePendiente(item)) {
       setState(() {
         _selected = Map<String, dynamic>.from(item as Map);
         _preview = null;
-        _errorPreview =
-            'Este vehículo está en lavado. Finaliza el lavado antes de registrar la salida.';
+        _errorPreview = null;
         _errorConfirm = null;
       });
       return;
@@ -133,6 +140,17 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
         _preview = null;
         _errorPreview =
             'El item no trae id_ingreso (revisa formato de /activos).';
+      });
+      return;
+    }
+
+    if (_isEnLavado(item)) {
+      setState(() {
+        _selected = Map<String, dynamic>.from(item as Map);
+        _preview = null;
+        _errorPreview =
+            'Este vehículo está en lavado. Finaliza el lavado antes de registrar la salida.';
+        _errorConfirm = null;
       });
       return;
     }
@@ -226,6 +244,42 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
     }
   }
 
+  Future<void> _resolverNoche({required bool convertir}) async {
+    final sel = _selected;
+    final idIngreso = sel == null ? null : _getIdIngreso(sel);
+    if (idIngreso == null) return;
+    setState(() {
+      _confirming = true;
+      _errorConfirm = null;
+    });
+    try {
+      await (convertir
+          ? _repo.convertirNoche(idIngreso)
+          : _repo.finalizarNoche(idIngreso));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            convertir
+                ? 'Noche convertida a ingreso normal desde 10:00.'
+                : 'Noche finalizada. Retiro registrado sin cobro adicional.',
+          ),
+        ),
+      );
+      setState(() {
+        _selected = null;
+        _preview = null;
+      });
+      await _loadActivos();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _errorConfirm = 'No se pudo resolver la noche: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _confirming = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final sel = _selected;
@@ -299,6 +353,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                         final hora = _getHoraIngreso(item);
                         final id = _getIdIngreso(item)?.toString() ?? '?';
                         final enLavado = _isEnLavado(item);
+                        final nochePendiente = _isNochePendiente(item);
 
                         final selected =
                             (sel != null) &&
@@ -336,7 +391,9 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                             subtitle: Text(
-                              enLavado
+                              nochePendiente
+                                  ? 'Noche pendiente'
+                                  : enLavado
                                   ? 'Ingreso: $hora • En lavado'
                                   : 'Ingreso: $hora • ID $id',
                             ),
@@ -370,69 +427,116 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 8),
-                      if (_loadingPreview) ...[
-                        const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                      if (_isNochePendiente(sel)) ...[
+                        const Text(
+                          'Esta Noche está pendiente de resolución. No se puede confirmar una salida regular.',
                         ),
                         const SizedBox(height: 8),
-                      ],
-                      if (_errorPreview != null) ...[
-                        _MessageBox(text: _errorPreview!, isError: true),
-                        const SizedBox(height: 8),
-                      ],
-                      if (preview != null) ...[
-                        _kv('Minutos', (preview['minutos'] ?? '').toString()),
-                        _kv('A cobrar ahora', (preview['a_cobrar_ahora'] ?? preview['monto'] ?? '').toString()),
-                        if ((preview['total_noches_prepagadas'] ?? 0) != 0)
-                          _kv('Noche pagada', (preview['total_noches_prepagadas'] ?? '').toString()),
-                        if ((preview['minutos_extra_antes_noche'] ?? 0) != 0)
-                          _kv('Extra antes de noche', '${preview['minutos_extra_antes_noche']} min'),
-                        if ((preview['minutos_extra_despues_noche'] ?? 0) != 0)
-                          _kv('Extra después de noche', '${preview['minutos_extra_despues_noche']} min'),
-                        _kv('Detalle', (preview['detalle'] ?? '').toString()),
-                        const SizedBox(height: 8),
-                      ],
-                      if (_sunmiAvailable)
-                        CheckboxListTile(
-                          contentPadding: EdgeInsets.zero,
-                          value: _imprimirSunmi,
-                          onChanged: (v) {
-                            setState(() => _imprimirSunmi = v ?? false);
-                          },
-                          title: const Text(
-                            'Imprimir copia local opcional en Sunmi',
-                          ),
-                          subtitle: const Text(
-                            'No reemplaza el comprobante durable enviado a PC / Print Agent.',
-                          ),
-                          controlAffinity: ListTileControlAffinity.leading,
+                        OutlinedButton(
+                          onPressed: _confirming
+                              ? null
+                              : () => _resolverNoche(convertir: false),
+                          child: const Text('Finalizar Noche'),
                         ),
-                      if (_sunmiCopyStatus != null) ...[
-                        _kv('Copia local Sunmi', _sunmiCopyStatus!),
+                        const Text(
+                          'Registra el retiro sin cobro adicional.',
+                          style: TextStyle(fontSize: 12),
+                        ),
                         const SizedBox(height: 8),
+                        ElevatedButton(
+                          onPressed: _confirming
+                              ? null
+                              : () => _resolverNoche(convertir: true),
+                          child: const Text(
+                            'Convertir a ingreso normal desde 10:00',
+                          ),
+                        ),
+                        if (_errorConfirm != null) ...[
+                          const SizedBox(height: 8),
+                          _MessageBox(text: _errorConfirm!, isError: true),
+                        ],
+                      ] else ...[
+                        if (_loadingPreview) ...[
+                          const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        if (_errorPreview != null) ...[
+                          _MessageBox(text: _errorPreview!, isError: true),
+                          const SizedBox(height: 8),
+                        ],
+                        if (preview != null) ...[
+                          _kv('Minutos', (preview['minutos'] ?? '').toString()),
+                          _kv(
+                            'A cobrar ahora',
+                            (preview['a_cobrar_ahora'] ??
+                                    preview['monto'] ??
+                                    '')
+                                .toString(),
+                          ),
+                          if ((preview['total_noches_prepagadas'] ?? 0) != 0)
+                            _kv(
+                              'Noche pagada',
+                              (preview['total_noches_prepagadas'] ?? '')
+                                  .toString(),
+                            ),
+                          if ((preview['minutos_extra_antes_noche'] ?? 0) != 0)
+                            _kv(
+                              'Extra antes de noche',
+                              '${preview['minutos_extra_antes_noche']} min',
+                            ),
+                          if ((preview['minutos_extra_despues_noche'] ?? 0) !=
+                              0)
+                            _kv(
+                              'Extra después de noche',
+                              '${preview['minutos_extra_despues_noche']} min',
+                            ),
+                          _kv('Detalle', (preview['detalle'] ?? '').toString()),
+                          const SizedBox(height: 8),
+                        ],
+                        if (_sunmiAvailable)
+                          CheckboxListTile(
+                            contentPadding: EdgeInsets.zero,
+                            value: _imprimirSunmi,
+                            onChanged: (v) {
+                              setState(() => _imprimirSunmi = v ?? false);
+                            },
+                            title: const Text(
+                              'Imprimir copia local opcional en Sunmi',
+                            ),
+                            subtitle: const Text(
+                              'No reemplaza el comprobante durable enviado a PC / Print Agent.',
+                            ),
+                            controlAffinity: ListTileControlAffinity.leading,
+                          ),
+                        if (_sunmiCopyStatus != null) ...[
+                          _kv('Copia local Sunmi', _sunmiCopyStatus!),
+                          const SizedBox(height: 8),
+                        ],
+                        if (_errorConfirm != null) ...[
+                          _MessageBox(text: _errorConfirm!, isError: true),
+                          const SizedBox(height: 8),
+                        ],
+                        ElevatedButton.icon(
+                          onPressed: (_confirming || preview == null)
+                              ? null
+                              : _confirmSalida,
+                          icon: const Icon(Icons.logout),
+                          label: _confirming
+                              ? const SizedBox(
+                                  height: 18,
+                                  width: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Confirmar salida'),
+                        ),
                       ],
-                      if (_errorConfirm != null) ...[
-                        _MessageBox(text: _errorConfirm!, isError: true),
-                        const SizedBox(height: 8),
-                      ],
-                      ElevatedButton.icon(
-                        onPressed: (_confirming || preview == null)
-                            ? null
-                            : _confirmSalida,
-                        icon: const Icon(Icons.logout),
-                        label: _confirming
-                            ? const SizedBox(
-                                height: 18,
-                                width: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text('Confirmar salida'),
-                      ),
                     ],
                   ],
                 ),
