@@ -386,7 +386,11 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                         _kv('Minutos', (preview['minutos'] ?? '').toString()),
                         _kv('A cobrar ahora', (preview['a_cobrar_ahora'] ?? preview['monto'] ?? '').toString()),
                         if ((preview['total_noches_prepagadas'] ?? 0) != 0)
-                          _kv('Noches ya pagadas', (preview['total_noches_prepagadas'] ?? '').toString()),
+                          _kv('Noche pagada', (preview['total_noches_prepagadas'] ?? '').toString()),
+                        if ((preview['minutos_extra_antes_noche'] ?? 0) != 0)
+                          _kv('Extra antes de noche', '${preview['minutos_extra_antes_noche']} min'),
+                        if ((preview['minutos_extra_despues_noche'] ?? 0) != 0)
+                          _kv('Extra después de noche', '${preview['minutos_extra_despues_noche']} min'),
                         _kv('Detalle', (preview['detalle'] ?? '').toString()),
                         const SizedBox(height: 8),
                       ],

@@ -119,7 +119,7 @@ class ApiErrorMapper {
       case 422:
         if (body.contains('NOCHES_NOT_AVAILABLE')) {
           return ApiException(
-            'No se puede registrar con Noches prepago porque no está disponible. Verifica que esté habilitado y tenga un valor mayor que cero.',
+            'No se puede registrar en modo Noche porque no está disponible. Verifica que esté habilitado y tenga un valor mayor que cero.',
             statusCode: status,
           );
         }

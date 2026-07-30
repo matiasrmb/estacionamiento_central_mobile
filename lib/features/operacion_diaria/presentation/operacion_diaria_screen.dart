@@ -302,9 +302,13 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
             _SalidaPreviewLine(label: 'A cobrar ahora', value: _money(preview['a_cobrar_ahora'] ?? preview['monto'])),
             if ((preview['total_noches_prepagadas'] ?? 0) != 0)
               _SalidaPreviewLine(
-                label: 'Noches ya pagadas',
+                label: 'Noche pagada',
                 value: _money(preview['total_noches_prepagadas']),
               ),
+            if ((preview['minutos_extra_antes_noche'] ?? 0) != 0)
+              _SalidaPreviewLine(label: 'Extra antes de noche', value: '${preview['minutos_extra_antes_noche']} min'),
+            if ((preview['minutos_extra_despues_noche'] ?? 0) != 0)
+              _SalidaPreviewLine(label: 'Extra después de noche', value: '${preview['minutos_extra_despues_noche']} min'),
             if (minutos != null)
               _SalidaPreviewLine(label: 'Minutos', value: '$minutos min'),
             if (detalle.isNotEmpty)

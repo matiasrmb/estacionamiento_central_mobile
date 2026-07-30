@@ -197,7 +197,7 @@ class _IngresoScreenState extends State<IngresoScreen> {
                           ),
                           DropdownMenuItem(
                             value: true,
-                            child: Text('Ingreso con Noches prepago'),
+                            child: Text('Ingreso en modo Noche'),
                           ),
                         ],
                         onChanged: _loading
@@ -210,7 +210,7 @@ class _IngresoScreenState extends State<IngresoScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Noches prepago está disponible cuando está habilitado y tiene un valor configurado.',
+                        'El modo Noche es prepago y cubre de 19:30 a 09:30, con gracia de 19:00 a 10:00.',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                       const SizedBox(height: 12),

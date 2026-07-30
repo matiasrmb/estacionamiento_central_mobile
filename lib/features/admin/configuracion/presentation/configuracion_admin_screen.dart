@@ -25,7 +25,7 @@ class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
     'tarifa_hora': 'Tarifa hora',
     'valor_bano': 'Valor baño',
     'noches_activo': 'Noches activas (1 sí, 0 no)',
-    'noches_valor': 'Noches: valor adicional',
+    'noches_valor': 'Modo Noche: valor prepago',
     'lavado_citycar': 'Lavado CityCar',
     'lavado_suv': 'Lavado SUV',
     'lavado_camioneta': 'Lavado Camioneta',

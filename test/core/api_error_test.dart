@@ -48,7 +48,7 @@ void main() {
     expect(mapped.statusCode, 422);
     expect(
       mapped.message,
-      'No se puede registrar con Noches prepago porque no está disponible. Verifica que esté habilitado y tenga un valor mayor que cero.',
+      'No se puede registrar en modo Noche porque no está disponible. Verifica que esté habilitado y tenga un valor mayor que cero.',
     );
   });
 }
