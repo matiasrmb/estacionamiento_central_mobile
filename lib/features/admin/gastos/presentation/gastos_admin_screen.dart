@@ -23,7 +23,7 @@ class _GastosAdminScreenState extends State<GastosAdminScreen> {
 
   String _categoria = _categorias.first;
   bool _loading = true;
-  bool _isAdmin = false;
+  bool _hasAccess = false;
   bool _saving = false;
   String? _error;
   List<Map<String, dynamic>> _items = [];
@@ -71,9 +71,9 @@ class _GastosAdminScreenState extends State<GastosAdminScreen> {
   Future<void> _loadSessionAndData() async {
     final role = await SecureStore().readRole() ?? '';
     if (!mounted) return;
-    final isAdmin = AppRoles.isAdmin(role);
-    setState(() => _isAdmin = isAdmin);
-    if (!isAdmin) {
+    final hasAccess = AppRoles.isOperatorOrAdmin(role);
+    setState(() => _hasAccess = hasAccess);
+    if (!hasAccess) {
       setState(() => _loading = false);
       return;
     }
@@ -118,7 +118,7 @@ class _GastosAdminScreenState extends State<GastosAdminScreen> {
           onPressed: () => context.go('/home'),
         ),
         actions: [
-          if (_isAdmin)
+          if (_hasAccess)
             IconButton(
               onPressed: _loading ? null : _load,
               icon: const Icon(Icons.refresh),
@@ -127,11 +127,11 @@ class _GastosAdminScreenState extends State<GastosAdminScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : !_isAdmin
+          : !_hasAccess
           ? const Center(
               child: Padding(
                 padding: EdgeInsets.all(16),
-                child: Text('No tienes permisos para administrar gastos.'),
+                child: Text('No tienes permisos para gestionar gastos.'),
               ),
             )
           : ListView(

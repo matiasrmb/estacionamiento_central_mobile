@@ -10,4 +10,9 @@ class AppRoles {
   }
 
   static bool isAdmin(String role) => normalize(role) == admin;
+
+  static bool isOperatorOrAdmin(String role) {
+    final normalized = normalize(role);
+    return normalized == operador || normalized == admin;
+  }
 }

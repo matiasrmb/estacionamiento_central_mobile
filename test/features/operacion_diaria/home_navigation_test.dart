@@ -45,4 +45,30 @@ void main() {
 
     expect(find.text('Gastos'), findsOneWidget);
   });
+
+  testWidgets('home exposes Cierres and Gastos for operators only', (
+    tester,
+  ) async {
+    await AppServices.I.init();
+    await AppServices.I.store.saveSession(
+      token: 'token',
+      user: 'operador',
+      role: 'operador',
+    );
+
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Cierres'),
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+
+    expect(find.text('Cierres'), findsOneWidget);
+    expect(find.text('Gastos'), findsOneWidget);
+    expect(find.text('Reportes'), findsNothing);
+    expect(find.text('Mensuales'), findsNothing);
+    expect(find.text('Usuarios'), findsNothing);
+    expect(find.text('Configuración'), findsNothing);
+  });
 }

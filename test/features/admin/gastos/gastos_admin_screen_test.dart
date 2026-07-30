@@ -17,7 +17,7 @@ void main() {
   });
 
   testWidgets(
-    'operator direct navigation to gastos does not load or show form',
+    'operator direct navigation to gastos can validate, create, and refresh',
     (tester) async {
       await AppServices.I.init();
       await AppServices.I.store.saveSession(
@@ -40,12 +40,19 @@ void main() {
       await tester.pumpWidget(MaterialApp.router(routerConfig: router));
       await tester.pumpAndSettle();
 
-      expect(
-        find.text('No tienes permisos para administrar gastos.'),
-        findsOneWidget,
+      final submitButton = find.widgetWithText(
+        ElevatedButton,
+        'Registrar gasto',
       );
-      expect(find.text('Registrar gasto'), findsNothing);
-      expect(adapter.requestCount, 0);
+      expect(find.text('Registrar gasto'), findsNWidgets(2));
+      expect(adapter.requestCount, 1);
+
+      await tester.enterText(find.byType(TextFormField).at(0), 'Agua');
+      await tester.enterText(find.byType(TextFormField).at(1), '250');
+      await tester.tap(submitButton);
+      await tester.pumpAndSettle();
+
+      expect(adapter.requestCount, 3);
     },
   );
 

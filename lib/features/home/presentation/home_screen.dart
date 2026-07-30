@@ -49,6 +49,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isAdmin = AppRoles.isAdmin(_role);
+    final canManageCierresYGastos =
+        _role.isNotEmpty && AppRoles.isOperatorOrAdmin(_role);
 
     return Scaffold(
       appBar: AppBar(
@@ -128,6 +130,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
+            if (canManageCierresYGastos) ...[
+              const SizedBox(height: 16),
+              _SectionCard(
+                title: 'Cierres y gastos',
+                subtitle: 'Control del cierre diario y gastos operacionales.',
+                children: [
+                  _HomeActionButton(
+                    label: 'Cierres',
+                    icon: Icons.lock_clock,
+                    onPressed: () => context.go('/admin/cierres'),
+                  ),
+                  const SizedBox(height: 10),
+                  _HomeActionButton(
+                    label: 'Gastos',
+                    icon: Icons.receipt_long,
+                    onPressed: () => context.go('/admin/gastos'),
+                  ),
+                ],
+              ),
+            ],
             if (isAdmin) ...[
               const SizedBox(height: 16),
               _SectionCard(
@@ -168,18 +190,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: 'Asistencias',
                     icon: Icons.badge,
                     onPressed: () => context.go('/admin/asistencias'),
-                  ),
-                  const SizedBox(height: 10),
-                  _HomeActionButton(
-                    label: 'Cierres',
-                    icon: Icons.lock_clock,
-                    onPressed: () => context.go('/admin/cierres'),
-                  ),
-                  const SizedBox(height: 10),
-                  _HomeActionButton(
-                    label: 'Gastos',
-                    icon: Icons.receipt_long,
-                    onPressed: () => context.go('/admin/gastos'),
                   ),
                 ],
               ),
