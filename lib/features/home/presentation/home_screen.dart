@@ -175,6 +175,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     icon: Icons.lock_clock,
                     onPressed: () => context.go('/admin/cierres'),
                   ),
+                  const SizedBox(height: 10),
+                  _HomeActionButton(
+                    label: 'Gastos',
+                    icon: Icons.receipt_long,
+                    onPressed: () => context.go('/admin/gastos'),
+                  ),
                 ],
               ),
             ],

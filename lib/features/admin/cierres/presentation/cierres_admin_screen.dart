@@ -149,6 +149,11 @@ class _CierresAdminScreenState extends State<CierresAdminScreen> {
                                 'Total general',
                                 _money(pendiente['total_general']),
                               ),
+                              _kv('Gastos', _money(pendiente['total_gastos'])),
+                              _kv(
+                                'Total neto',
+                                _money(pendiente['total_neto']),
+                              ),
                               const SizedBox(height: 12),
                               SizedBox(
                                 width: double.infinity,
@@ -182,12 +187,13 @@ class _CierresAdminScreenState extends State<CierresAdminScreen> {
                   Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
-                      title: Text(_money(item['total_general'])),
-                      subtitle: Text(
-                        '${_text(item['fecha_inicio'])} → ${_text(item['fecha_cierre'])}\n'
-                        'Salidas: ${item['total_salidas'] ?? 0} • Baños: ${item['total_banos'] ?? 0}',
+                      title: Text(
+                        'Total general: ${_money(item['total_general'])}',
                       ),
-                      isThreeLine: true,
+                      subtitle: Text(_historySubtitle(item)),
+                      isThreeLine:
+                          item.containsKey('total_gastos') &&
+                          item.containsKey('total_neto'),
                     ),
                   ),
               ],
@@ -220,4 +226,14 @@ class _CierresAdminScreenState extends State<CierresAdminScreen> {
   }
 
   String _text(dynamic value) => value == null ? '-' : '$value';
+
+  String _historySubtitle(Map<String, dynamic> item) {
+    final financialTotals =
+        item.containsKey('total_gastos') && item.containsKey('total_neto')
+        ? '\nGastos: ${_money(item['total_gastos'])} • Total neto: ${_money(item['total_neto'])}'
+        : '';
+    return '${_text(item['fecha_inicio'])} → ${_text(item['fecha_cierre'])}'
+        '$financialTotals\n'
+        'Salidas: ${item['total_salidas'] ?? 0} • Baños: ${item['total_banos'] ?? 0}';
+  }
 }
