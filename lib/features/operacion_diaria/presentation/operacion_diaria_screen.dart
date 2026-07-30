@@ -299,7 +299,12 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _SalidaPreviewLine(label: 'Patente', value: record.patente),
-            _SalidaPreviewLine(label: 'Monto', value: _money(preview['monto'])),
+            _SalidaPreviewLine(label: 'A cobrar ahora', value: _money(preview['a_cobrar_ahora'] ?? preview['monto'])),
+            if ((preview['total_noches_prepagadas'] ?? 0) != 0)
+              _SalidaPreviewLine(
+                label: 'Noches ya pagadas',
+                value: _money(preview['total_noches_prepagadas']),
+              ),
             if (minutos != null)
               _SalidaPreviewLine(label: 'Minutos', value: '$minutos min'),
             if (detalle.isNotEmpty)

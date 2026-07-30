@@ -20,6 +20,7 @@ class _IngresoScreenState extends State<IngresoScreen> {
   final _patenteCtrl = TextEditingController();
 
   bool _loading = false;
+  bool _nochesPrepagadas = false;
   String? _error;
   Map<String, dynamic>? _result;
 
@@ -69,10 +70,16 @@ class _IngresoScreenState extends State<IngresoScreen> {
     final patente = _normalizePatente(_patenteCtrl.text);
 
     try {
-      final data = await _repo.registrar(patente);
+      final data = await _repo.registrar(
+        patente,
+        nochesPrepagadas: _nochesPrepagadas,
+      );
       if (!mounted) return;
 
-      setState(() => _result = data);
+      setState(() {
+        _result = data;
+        _nochesPrepagadas = false;
+      });
       _patenteCtrl.clear();
 
       // This is a best-effort local copy; the API has already created the durable receipt.
@@ -174,6 +181,37 @@ class _IngresoScreenState extends State<IngresoScreen> {
                           }
                           return null;
                         },
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<bool>(
+                        key: ValueKey(_nochesPrepagadas),
+                        initialValue: _nochesPrepagadas,
+                        decoration: const InputDecoration(
+                          labelText: 'Tipo de ingreso',
+                          prefixIcon: Icon(Icons.nights_stay_outlined),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: false,
+                            child: Text('Ingreso normal'),
+                          ),
+                          DropdownMenuItem(
+                            value: true,
+                            child: Text('Ingreso con Noches prepago'),
+                          ),
+                        ],
+                        onChanged: _loading
+                            ? null
+                            : (value) {
+                                setState(
+                                  () => _nochesPrepagadas = value ?? false,
+                                );
+                              },
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Noches prepago está disponible cuando está habilitado y tiene un valor configurado.',
+                        style: Theme.of(context).textTheme.bodySmall,
                       ),
                       const SizedBox(height: 12),
                       ElevatedButton.icon(

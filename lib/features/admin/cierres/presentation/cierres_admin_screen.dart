@@ -149,6 +149,11 @@ class _CierresAdminScreenState extends State<CierresAdminScreen> {
                                   'Mensualidades',
                                   '${pendiente['total_mensualidades'] ?? 0} / ${_money(pendiente['total_mensualidades_monto'])}',
                                 ),
+                              if (pendiente.containsKey('total_noches'))
+                                _kv(
+                                  'Noches prepagadas',
+                                  '${pendiente['total_noches'] ?? 0} / ${_money(pendiente['total_noches_monto'])}',
+                                ),
                               const Divider(),
                               _kv(
                                 'Total general',
@@ -197,9 +202,10 @@ class _CierresAdminScreenState extends State<CierresAdminScreen> {
                       ),
                       subtitle: Text(_historySubtitle(item)),
                       isThreeLine:
-                          item.containsKey('total_gastos') &&
-                              item.containsKey('total_neto') ||
-                          item.containsKey('total_mensualidades'),
+                           item.containsKey('total_gastos') &&
+                               item.containsKey('total_neto') ||
+                           item.containsKey('total_mensualidades') ||
+                           item.containsKey('total_noches'),
                     ),
                   ),
               ],
@@ -241,8 +247,11 @@ class _CierresAdminScreenState extends State<CierresAdminScreen> {
     final monthlyTotals = item.containsKey('total_mensualidades')
         ? ' • Mensualidades: ${item['total_mensualidades'] ?? 0} / ${_money(item['total_mensualidades_monto'])}'
         : '';
+    final nightTotals = item.containsKey('total_noches')
+        ? ' • Noches: ${item['total_noches'] ?? 0} / ${_money(item['total_noches_monto'])}'
+        : '';
     return '${_text(item['fecha_inicio'])} → ${_text(item['fecha_cierre'])}'
         '$financialTotals\n'
-        'Salidas: ${item['total_salidas'] ?? 0} • Baños: ${item['total_banos'] ?? 0}$monthlyTotals';
+        'Salidas: ${item['total_salidas'] ?? 0} • Baños: ${item['total_banos'] ?? 0}$monthlyTotals$nightTotals';
   }
 }

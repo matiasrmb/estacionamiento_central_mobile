@@ -199,7 +199,7 @@ class _ReportesAdminScreenState extends State<ReportesAdminScreen> {
                 Expanded(
                   child: _SummaryCard(
                     title: 'Total',
-                    value: _money(reporte['total_recaudado']),
+                    value: _money(reporte['total_general']),
                   ),
                 ),
               ],
@@ -220,6 +220,21 @@ class _ReportesAdminScreenState extends State<ReportesAdminScreen> {
               ),
               const SizedBox(height: 16),
             ],
+            if (reporte.containsKey('total_noches')) ...[
+              Card(
+                child: ListTile(
+                  title: const Text('Noches prepagadas'),
+                  subtitle: Text(
+                    '${reporte['total_noches'] ?? 0} cobros registrados',
+                  ),
+                  trailing: Text(
+                    _money(reporte['total_noches_monto']),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
           ],
           Text('Movimientos', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
@@ -230,7 +245,11 @@ class _ReportesAdminScreenState extends State<ReportesAdminScreen> {
               margin: const EdgeInsets.only(bottom: 12),
               child: ListTile(
                 leading: Icon(
-                  item['tipo'] == 'bano' ? Icons.wc : Icons.directions_car,
+                  item['tipo'] == 'bano'
+                      ? Icons.wc
+                      : item['tipo'] == 'noche'
+                      ? Icons.nightlight_round
+                      : Icons.directions_car,
                 ),
                 title: Text(
                   '${item['patente'] ?? ''} • ${_money(item['tarifa_aplicada'])}',

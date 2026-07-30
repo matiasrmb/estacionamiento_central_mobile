@@ -24,6 +24,8 @@ class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
     'valor_minuto': 'Valor minuto',
     'tarifa_hora': 'Tarifa hora',
     'valor_bano': 'Valor baño',
+    'noches_activo': 'Noches activas (1 sí, 0 no)',
+    'noches_valor': 'Noches: valor adicional',
     'lavado_citycar': 'Lavado CityCar',
     'lavado_suv': 'Lavado SUV',
     'lavado_camioneta': 'Lavado Camioneta',
@@ -109,7 +111,9 @@ class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
                 for (final entry in _fields.entries) ...[
                   TextField(
                     controller: _controllers[entry.key],
-                    keyboardType: entry.key == 'modo_cobro' ? TextInputType.text : TextInputType.number,
+                    keyboardType: entry.key == 'modo_cobro'
+                        ? TextInputType.text
+                        : TextInputType.number,
                     decoration: InputDecoration(
                       labelText: entry.value,
                       border: const OutlineInputBorder(),

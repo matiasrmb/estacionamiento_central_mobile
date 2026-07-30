@@ -5,7 +5,13 @@ class IngresoRepository {
 
   IngresoRepository({required this.api});
 
-  Future<Map<String, dynamic>> registrar(String patente) {
-    return api.registrarIngreso(patente: patente);
+  Future<Map<String, dynamic>> registrar(
+    String patente, {
+    bool nochesPrepagadas = false,
+  }) {
+    return api.registrarIngreso(
+      patente: patente,
+      nochesPrepagadas: nochesPrepagadas,
+    );
   }
 }

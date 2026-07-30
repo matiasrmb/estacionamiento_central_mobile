@@ -8,11 +8,12 @@ class IngresoApi {
 
   Future<Map<String, dynamic>> registrarIngreso({
     required String patente,
+    bool nochesPrepagadas = false,
   }) async {
     try {
       final Response res = await client.dio.post(
         '/ingresos',
-        data: {'patente': patente},
+        data: {'patente': patente, 'noches_prepagadas': nochesPrepagadas},
       );
       return Map<String, dynamic>.from(res.data);
     } on DioException catch (e) {

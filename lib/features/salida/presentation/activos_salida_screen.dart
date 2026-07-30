@@ -384,7 +384,9 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                       ],
                       if (preview != null) ...[
                         _kv('Minutos', (preview['minutos'] ?? '').toString()),
-                        _kv('Monto', (preview['monto'] ?? '').toString()),
+                        _kv('A cobrar ahora', (preview['a_cobrar_ahora'] ?? preview['monto'] ?? '').toString()),
+                        if ((preview['total_noches_prepagadas'] ?? 0) != 0)
+                          _kv('Noches ya pagadas', (preview['total_noches_prepagadas'] ?? '').toString()),
                         _kv('Detalle', (preview['detalle'] ?? '').toString()),
                         const SizedBox(height: 8),
                       ],
