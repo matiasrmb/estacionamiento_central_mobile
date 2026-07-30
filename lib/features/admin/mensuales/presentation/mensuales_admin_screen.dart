@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/app_services.dart';
+import '../../../../core/api_error.dart';
 import '../../../../core/roles.dart';
 import '../../../../core/storage.dart';
 import '../data/mensuales_api.dart';
@@ -18,7 +19,7 @@ class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
   bool _loading = true;
   bool _isAdmin = false;
   String? _error;
-  List<Map<String, dynamic>> _items = [];
+  List<Mensual> _items = [];
 
   @override
   void initState() {
@@ -56,7 +57,7 @@ class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
     }
   }
 
-  Future<void> _openForm([Map<String, dynamic>? item]) async {
+  Future<void> _openForm([Mensual? item]) async {
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => _MensualFormDialog(api: _api, item: item),
@@ -64,10 +65,9 @@ class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
     if (saved == true) await _load();
   }
 
-  Future<void> _delete(Map<String, dynamic> item) async {
-    final id = item['id_vehiculo'] as int;
+  Future<void> _delete(Mensual item) async {
     try {
-      await _api.eliminar(id);
+      await _api.eliminar(item.idVehiculo);
       await _load();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -78,6 +78,52 @@ class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('No se pudo eliminar: $e')));
+    }
+  }
+
+  Future<void> _registrarPago(Mensual item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar pago'),
+        content: Text(
+          'Se registrará el pago de ${item.patente} para ${item.periodoActual ?? 'el periodo actual'} por ${_money(item.tarifaMensual)}.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Registrar pago'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await _api.registrarPago(idVehiculo: item.idVehiculo);
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Pago registrado.')));
+    } on ApiException catch (e) {
+      await _load();
+      if (!mounted) return;
+      final message = e.statusCode == 409
+          ? 'El pago de este periodo ya fue registrado.'
+          : 'No se pudo registrar el pago: $e';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo registrar el pago: $e')),
+      );
     }
   }
 
@@ -123,12 +169,17 @@ class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
                   Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
-                      title: Text('${item['patente']}'),
-                      subtitle: Text(
-                        'Tarifa mensual: ${item['tarifa_mensual'] ?? 0}',
-                      ),
+                      title: Text(item.patente),
+                      subtitle: Text(_mensualDetalle(item)),
+                      isThreeLine: item.pagado,
                       trailing: Wrap(
                         children: [
+                          if (!item.pagado)
+                            IconButton(
+                              tooltip: 'Registrar pago',
+                              icon: const Icon(Icons.payments),
+                              onPressed: () => _registrarPago(item),
+                            ),
                           IconButton(
                             icon: const Icon(Icons.edit),
                             onPressed: () => _openForm(item),
@@ -145,11 +196,29 @@ class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
             ),
     );
   }
+
+  String _mensualDetalle(Mensual item) {
+    final lines = [
+      'Tarifa mensual: ${_money(item.tarifaMensual)}',
+      'Vence el día: ${item.diaVencimiento ?? '-'} · ${item.estadoPagoTexto}',
+    ];
+    if (item.pagado) {
+      lines.add(
+        'Pago: ${item.montoPago == null ? 'Monto no disponible' : _money(item.montoPago)}${item.fechaPago == null ? '' : ' · ${item.fechaPago!.replaceFirst('T', ' ')}'}',
+      );
+    }
+    return lines.join('\n');
+  }
+
+  String _money(dynamic value) {
+    final amount = value is num ? value.toInt() : int.tryParse('$value') ?? 0;
+    return '\$$amount';
+  }
 }
 
 class _MensualFormDialog extends StatefulWidget {
   final MensualesApi api;
-  final Map<String, dynamic>? item;
+  final Mensual? item;
 
   const _MensualFormDialog({required this.api, this.item});
 
@@ -160,6 +229,7 @@ class _MensualFormDialog extends StatefulWidget {
 class _MensualFormDialogState extends State<_MensualFormDialog> {
   late final TextEditingController _patenteCtrl;
   late final TextEditingController _tarifaCtrl;
+  late final TextEditingController _vencimientoCtrl;
   bool _saving = false;
   String? _error;
 
@@ -169,9 +239,10 @@ class _MensualFormDialogState extends State<_MensualFormDialog> {
   void initState() {
     super.initState();
     final item = widget.item;
-    _patenteCtrl = TextEditingController(text: '${item?['patente'] ?? ''}');
-    _tarifaCtrl = TextEditingController(
-      text: '${item?['tarifa_mensual'] ?? ''}',
+    _patenteCtrl = TextEditingController(text: item?.patente ?? '');
+    _tarifaCtrl = TextEditingController(text: '${item?.tarifaMensual ?? ''}');
+    _vencimientoCtrl = TextEditingController(
+      text: item?.diaVencimiento?.toString() ?? '',
     );
   }
 
@@ -180,8 +251,14 @@ class _MensualFormDialogState extends State<_MensualFormDialog> {
     final tarifa = int.tryParse(
       _tarifaCtrl.text.trim().isEmpty ? '0' : _tarifaCtrl.text.trim(),
     );
-    if (patente.isEmpty || tarifa == null) {
-      setState(() => _error = 'Ingresa patente y tarifa válida.');
+    final vencimiento = int.tryParse(_vencimientoCtrl.text.trim());
+    if (patente.isEmpty || tarifa == null || tarifa <= 0) {
+      setState(() => _error = 'Ingresa patente y una tarifa mayor a cero.');
+      return;
+    }
+    if (_editing &&
+        (vencimiento == null || vencimiento < 1 || vencimiento > 31)) {
+      setState(() => _error = 'Ingresa un día de vencimiento entre 1 y 31.');
       return;
     }
 
@@ -195,9 +272,10 @@ class _MensualFormDialogState extends State<_MensualFormDialog> {
       if (item == null) {
         await widget.api.crear(patente: patente, tarifaMensual: tarifa);
       } else {
-        await widget.api.actualizarTarifa(
-          idVehiculo: item['id_vehiculo'] as int,
+        await widget.api.actualizarConfiguracion(
+          idVehiculo: item.idVehiculo,
           tarifaMensual: tarifa,
+          diaVencimiento: vencimiento!,
         );
       }
       if (!mounted) return;
@@ -214,6 +292,7 @@ class _MensualFormDialogState extends State<_MensualFormDialog> {
   void dispose() {
     _patenteCtrl.dispose();
     _tarifaCtrl.dispose();
+    _vencimientoCtrl.dispose();
     super.dispose();
   }
 
@@ -225,17 +304,25 @@ class _MensualFormDialogState extends State<_MensualFormDialog> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
+            TextFormField(
               controller: _patenteCtrl,
               enabled: !_editing,
               textCapitalization: TextCapitalization.characters,
               decoration: const InputDecoration(labelText: 'Patente'),
             ),
-            TextField(
+            TextFormField(
               controller: _tarifaCtrl,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: 'Tarifa mensual'),
             ),
+            if (_editing)
+              TextFormField(
+                controller: _vencimientoCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Día de vencimiento',
+                ),
+              ),
             if (_error != null) ...[
               const SizedBox(height: 12),
               Text(_error!, style: const TextStyle(color: Colors.red)),

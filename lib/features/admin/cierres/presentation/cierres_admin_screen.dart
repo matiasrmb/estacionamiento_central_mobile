@@ -144,6 +144,11 @@ class _CierresAdminScreenState extends State<CierresAdminScreen> {
                                 'Baños',
                                 '${pendiente['total_banos'] ?? 0} / ${_money(pendiente['total_banos_monto'])}',
                               ),
+                              if (pendiente.containsKey('total_mensualidades'))
+                                _kv(
+                                  'Mensualidades',
+                                  '${pendiente['total_mensualidades'] ?? 0} / ${_money(pendiente['total_mensualidades_monto'])}',
+                                ),
                               const Divider(),
                               _kv(
                                 'Total general',
@@ -193,7 +198,8 @@ class _CierresAdminScreenState extends State<CierresAdminScreen> {
                       subtitle: Text(_historySubtitle(item)),
                       isThreeLine:
                           item.containsKey('total_gastos') &&
-                          item.containsKey('total_neto'),
+                              item.containsKey('total_neto') ||
+                          item.containsKey('total_mensualidades'),
                     ),
                   ),
               ],
@@ -232,8 +238,11 @@ class _CierresAdminScreenState extends State<CierresAdminScreen> {
         item.containsKey('total_gastos') && item.containsKey('total_neto')
         ? '\nGastos: ${_money(item['total_gastos'])} • Total neto: ${_money(item['total_neto'])}'
         : '';
+    final monthlyTotals = item.containsKey('total_mensualidades')
+        ? ' • Mensualidades: ${item['total_mensualidades'] ?? 0} / ${_money(item['total_mensualidades_monto'])}'
+        : '';
     return '${_text(item['fecha_inicio'])} → ${_text(item['fecha_cierre'])}'
         '$financialTotals\n'
-        'Salidas: ${item['total_salidas'] ?? 0} • Baños: ${item['total_banos'] ?? 0}';
+        'Salidas: ${item['total_salidas'] ?? 0} • Baños: ${item['total_banos'] ?? 0}$monthlyTotals';
   }
 }

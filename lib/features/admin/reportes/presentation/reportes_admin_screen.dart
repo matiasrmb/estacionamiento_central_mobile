@@ -205,6 +205,21 @@ class _ReportesAdminScreenState extends State<ReportesAdminScreen> {
               ],
             ),
             const SizedBox(height: 16),
+            if (reporte.containsKey('total_mensualidades')) ...[
+              Card(
+                child: ListTile(
+                  title: const Text('Mensualidades'),
+                  subtitle: Text(
+                    '${reporte['total_mensualidades'] ?? 0} pagos registrados',
+                  ),
+                  trailing: Text(
+                    _money(reporte['total_mensualidades_monto']),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
           ],
           Text('Movimientos', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
