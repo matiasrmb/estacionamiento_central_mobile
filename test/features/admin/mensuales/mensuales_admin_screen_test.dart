@@ -67,6 +67,7 @@ void main() {
 
     expect(find.textContaining('Pago: Monto no disponible'), findsOneWidget);
     expect(find.textContaining(r'Pago: $35000'), findsNothing);
+    expect(find.textContaining('Teléfono: 1122334455'), findsOneWidget);
   });
 
   testWidgets('validates positive fee and due day when editing', (
@@ -97,6 +98,52 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('operator can create, edit, pay and deactivate a mensual', (
+    tester,
+  ) async {
+    await _setOperator();
+    final adapter = _MonthlyScreenAdapter();
+    AppServices.I.client.dio.httpClientAdapter = adapter;
+
+    await tester.pumpWidget(const MaterialApp(home: MensualesAdminScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Pendiente'), findsOneWidget);
+    expect(find.byIcon(Icons.add), findsOneWidget);
+    expect(find.byTooltip('Registrar pago'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'CD456EF');
+    await tester.enterText(find.byType(TextFormField).at(1), '28000');
+    await tester.enterText(find.byType(TextFormField).at(2), '8');
+    await tester.enterText(find.byType(TextFormField).at(3), '1122334455');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Guardar'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.edit));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(1), '30000');
+    await tester.enterText(find.byType(TextFormField).at(2), '10');
+    await tester.enterText(find.byType(TextFormField).at(3), '1198765432');
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Guardar'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Registrar pago'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ElevatedButton, 'Registrar pago'));
+    await tester.pumpAndSettle();
+
+    expect(adapter.paymentRequests, 1);
+    expect(adapter.createRequests, 1);
+    expect(adapter.updateRequests, 1);
+
+    await tester.tap(find.byIcon(Icons.delete));
+    await tester.pumpAndSettle();
+
+    expect(adapter.deleteRequests, 1);
+  });
 }
 
 Future<void> _setAdmin() async {
@@ -108,6 +155,15 @@ Future<void> _setAdmin() async {
   );
 }
 
+Future<void> _setOperator() async {
+  await AppServices.I.init();
+  await AppServices.I.store.saveSession(
+    token: 'token',
+    user: 'operador',
+    role: 'operador',
+  );
+}
+
 class _MonthlyScreenAdapter implements HttpClientAdapter {
   _MonthlyScreenAdapter({this.paid = false, this.missingPaidAmount = false});
 
@@ -115,6 +171,9 @@ class _MonthlyScreenAdapter implements HttpClientAdapter {
   final bool missingPaidAmount;
   int listRequests = 0;
   int paymentRequests = 0;
+  int createRequests = 0;
+  int updateRequests = 0;
+  int deleteRequests = 0;
 
   @override
   Future<ResponseBody> fetch(
@@ -126,6 +185,15 @@ class _MonthlyScreenAdapter implements HttpClientAdapter {
       paymentRequests++;
       paid = true;
     }
+    if (options.method == 'POST' && options.path == '/mensuales') {
+      createRequests++;
+    }
+    if (options.method == 'PUT' && options.path == '/mensuales/12') {
+      updateRequests++;
+    }
+    if (options.method == 'DELETE' && options.path == '/mensuales/12') {
+      deleteRequests++;
+    }
     if (options.method == 'GET') listRequests++;
     return ResponseBody.fromString(
       jsonEncode({
@@ -135,6 +203,7 @@ class _MonthlyScreenAdapter implements HttpClientAdapter {
             'patente': 'AB123CD',
             'tarifa_mensual': 35000,
             'dia_vencimiento': 5,
+            'telefono': '1122334455',
             'periodo_actual': '2026-07',
             'estado_pago': paid ? 'pagado' : 'pendiente',
             'pagado_periodo_actual': paid,

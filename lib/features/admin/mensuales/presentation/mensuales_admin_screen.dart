@@ -17,7 +17,7 @@ class MensualesAdminScreen extends StatefulWidget {
 class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
   late final MensualesApi _api;
   bool _loading = true;
-  bool _isAdmin = false;
+  bool _canManageMensuales = false;
   String? _error;
   List<Mensual> _items = [];
 
@@ -31,9 +31,10 @@ class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
   Future<void> _loadSessionAndData() async {
     final role = await SecureStore().readRole() ?? '';
     if (!mounted) return;
-    final isAdmin = AppRoles.isAdmin(role);
-    setState(() => _isAdmin = isAdmin);
-    if (!isAdmin) {
+    final canManageMensuales =
+        role.isNotEmpty && AppRoles.isOperatorOrAdmin(role);
+    setState(() => _canManageMensuales = canManageMensuales);
+    if (!canManageMensuales) {
       setState(() => _loading = false);
       return;
     }
@@ -137,11 +138,11 @@ class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
           onPressed: () => context.go('/home'),
         ),
         actions: [
-          if (_isAdmin)
+          if (_canManageMensuales)
             IconButton(onPressed: _load, icon: const Icon(Icons.refresh)),
         ],
       ),
-      floatingActionButton: _isAdmin
+      floatingActionButton: _canManageMensuales
           ? FloatingActionButton(
               onPressed: () => _openForm(),
               child: const Icon(Icons.add),
@@ -149,7 +150,7 @@ class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
           : null,
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : !_isAdmin
+          : !_canManageMensuales
           ? const Center(
               child: Padding(
                 padding: EdgeInsets.all(16),
@@ -199,7 +200,7 @@ class _MensualesAdminScreenState extends State<MensualesAdminScreen> {
 
   String _mensualDetalle(Mensual item) {
     final lines = [
-      'Tarifa mensual: ${_money(item.tarifaMensual)}',
+      'Tarifa mensual: ${_money(item.tarifaMensual)}${item.telefono?.trim().isNotEmpty ?? false ? ' · Teléfono: ${item.telefono}' : ''}',
       'Vence el día: ${item.diaVencimiento ?? '-'} · ${item.estadoPagoTexto}',
     ];
     if (item.pagado) {
@@ -230,6 +231,7 @@ class _MensualFormDialogState extends State<_MensualFormDialog> {
   late final TextEditingController _patenteCtrl;
   late final TextEditingController _tarifaCtrl;
   late final TextEditingController _vencimientoCtrl;
+  late final TextEditingController _telefonoCtrl;
   bool _saving = false;
   String? _error;
 
@@ -244,6 +246,7 @@ class _MensualFormDialogState extends State<_MensualFormDialog> {
     _vencimientoCtrl = TextEditingController(
       text: item?.diaVencimiento?.toString() ?? '',
     );
+    _telefonoCtrl = TextEditingController(text: item?.telefono ?? '');
   }
 
   Future<void> _save() async {
@@ -252,12 +255,12 @@ class _MensualFormDialogState extends State<_MensualFormDialog> {
       _tarifaCtrl.text.trim().isEmpty ? '0' : _tarifaCtrl.text.trim(),
     );
     final vencimiento = int.tryParse(_vencimientoCtrl.text.trim());
+    final telefono = _telefonoCtrl.text.trim();
     if (patente.isEmpty || tarifa == null || tarifa <= 0) {
       setState(() => _error = 'Ingresa patente y una tarifa mayor a cero.');
       return;
     }
-    if (_editing &&
-        (vencimiento == null || vencimiento < 1 || vencimiento > 31)) {
+    if (vencimiento == null || vencimiento < 1 || vencimiento > 31) {
       setState(() => _error = 'Ingresa un día de vencimiento entre 1 y 31.');
       return;
     }
@@ -270,12 +273,18 @@ class _MensualFormDialogState extends State<_MensualFormDialog> {
     try {
       final item = widget.item;
       if (item == null) {
-        await widget.api.crear(patente: patente, tarifaMensual: tarifa);
+        await widget.api.crear(
+          patente: patente,
+          tarifaMensual: tarifa,
+          diaVencimiento: vencimiento,
+          telefono: telefono,
+        );
       } else {
         await widget.api.actualizarConfiguracion(
           idVehiculo: item.idVehiculo,
           tarifaMensual: tarifa,
-          diaVencimiento: vencimiento!,
+          diaVencimiento: vencimiento,
+          telefono: telefono,
         );
       }
       if (!mounted) return;
@@ -293,6 +302,7 @@ class _MensualFormDialogState extends State<_MensualFormDialog> {
     _patenteCtrl.dispose();
     _tarifaCtrl.dispose();
     _vencimientoCtrl.dispose();
+    _telefonoCtrl.dispose();
     super.dispose();
   }
 
@@ -315,14 +325,18 @@ class _MensualFormDialogState extends State<_MensualFormDialog> {
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: 'Tarifa mensual'),
             ),
-            if (_editing)
-              TextFormField(
-                controller: _vencimientoCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Día de vencimiento',
-                ),
+            TextFormField(
+              controller: _vencimientoCtrl,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Día de vencimiento',
               ),
+            ),
+            TextFormField(
+              controller: _telefonoCtrl,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(labelText: 'Teléfono'),
+            ),
             if (_error != null) ...[
               const SizedBox(height: 12),
               Text(_error!, style: const TextStyle(color: Colors.red)),

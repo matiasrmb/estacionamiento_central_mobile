@@ -13,50 +13,64 @@ void main() {
 
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 
-  test(
-    'parses backend payment fields and sends config and payment contracts',
-    () async {
-      final adapter = _MensualesAdapter();
-      final client = ApiClient(store: SecureStore())
-        ..dio.options.baseUrl = 'http://example.test/api/v1'
-        ..dio.httpClientAdapter = adapter;
-      final api = MensualesApi(client);
+  test('parses phone and sends full monthly management contracts', () async {
+    final adapter = _MensualesAdapter();
+    final client = ApiClient(store: SecureStore())
+      ..dio.options.baseUrl = 'http://example.test/api/v1'
+      ..dio.httpClientAdapter = adapter;
+    final api = MensualesApi(client);
 
-      final mensual = (await api.listar()).single;
-      await api.actualizarConfiguracion(
-        idVehiculo: 12,
-        tarifaMensual: 35000,
-        diaVencimiento: 10,
-      );
-      await api.registrarPago(
-        idVehiculo: 12,
-        metodoPago: 'efectivo',
-        observacion: 'Pago en caja',
-      );
+    final mensual = (await api.listar()).single;
+    await api.crear(
+      patente: 'CD456EF',
+      tarifaMensual: 28000,
+      diaVencimiento: 8,
+      telefono: '1122334455',
+    );
+    await api.actualizarConfiguracion(
+      idVehiculo: 12,
+      tarifaMensual: 35000,
+      diaVencimiento: 10,
+      telefono: '1198765432',
+    );
+    await api.registrarPago(
+      idVehiculo: 12,
+      metodoPago: 'efectivo',
+      observacion: 'Pago en caja',
+    );
 
-      expect(mensual.diaVencimiento, 5);
-      expect(mensual.periodoActual, '2026-07');
-      expect(mensual.estadoPagoTexto, 'Pagado');
-      expect(mensual.pagado, isTrue);
-      expect(mensual.fechaPago, '2026-07-01T10:30:00');
-      expect(mensual.montoPago, 25000);
-      expect(adapter.requests.map((request) => request.uri.path), [
-        '/api/v1/mensuales',
-        '/api/v1/mensuales/12',
-        '/api/v1/mensuales/12/pagos',
-      ]);
-      expect(adapter.requests[1].method, 'PUT');
-      expect(adapter.bodies[1], {
-        'tarifa_mensual': 35000,
-        'dia_vencimiento': 10,
-      });
-      expect(adapter.requests[2].method, 'POST');
-      expect(adapter.bodies[2], {
-        'metodo_pago': 'efectivo',
-        'observacion': 'Pago en caja',
-      });
-    },
-  );
+    expect(mensual.diaVencimiento, 5);
+    expect(mensual.telefono, '1122334455');
+    expect(mensual.periodoActual, '2026-07');
+    expect(mensual.estadoPagoTexto, 'Pagado');
+    expect(mensual.pagado, isTrue);
+    expect(mensual.fechaPago, '2026-07-01T10:30:00');
+    expect(mensual.montoPago, 25000);
+    expect(adapter.requests.map((request) => request.uri.path), [
+      '/api/v1/mensuales',
+      '/api/v1/mensuales',
+      '/api/v1/mensuales/12',
+      '/api/v1/mensuales/12/pagos',
+    ]);
+    expect(adapter.requests[1].method, 'POST');
+    expect(adapter.bodies[1], {
+      'patente': 'CD456EF',
+      'tarifa_mensual': 28000,
+      'dia_vencimiento': 8,
+      'telefono': '1122334455',
+    });
+    expect(adapter.requests[2].method, 'PUT');
+    expect(adapter.bodies[2], {
+      'tarifa_mensual': 35000,
+      'dia_vencimiento': 10,
+      'telefono': '1198765432',
+    });
+    expect(adapter.requests[3].method, 'POST');
+    expect(adapter.bodies[3], {
+      'metodo_pago': 'efectivo',
+      'observacion': 'Pago en caja',
+    });
+  });
 }
 
 class _MensualesAdapter implements HttpClientAdapter {
@@ -84,6 +98,7 @@ class _MensualesAdapter implements HttpClientAdapter {
                 'patente': 'AB123CD',
                 'tarifa_mensual': 35000,
                 'dia_vencimiento': '5',
+                'telefono': '1122334455',
                 'periodo_actual': '2026-07',
                 'estado_pago': 'pagado',
                 'pagado_periodo_actual': true,

@@ -51,6 +51,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final isAdmin = AppRoles.isAdmin(_role);
     final canManageCierresYGastos =
         _role.isNotEmpty && AppRoles.isOperatorOrAdmin(_role);
+    final canManageMensuales =
+        _role.isNotEmpty && AppRoles.isOperatorOrAdmin(_role);
 
     return Scaffold(
       appBar: AppBar(
@@ -150,6 +152,20 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ],
+            if (canManageMensuales) ...[
+              const SizedBox(height: 16),
+              _SectionCard(
+                title: 'Clientes mensuales',
+                subtitle: 'Gestión de clientes y pagos mensuales.',
+                children: [
+                  _HomeActionButton(
+                    label: 'Mensuales',
+                    icon: Icons.calendar_month,
+                    onPressed: () => context.go('/admin/mensuales'),
+                  ),
+                ],
+              ),
+            ],
             if (isAdmin) ...[
               const SizedBox(height: 16),
               _SectionCard(
@@ -172,12 +188,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     label: 'Tarifas',
                     icon: Icons.payments,
                     onPressed: () => context.go('/admin/tarifas'),
-                  ),
-                  const SizedBox(height: 10),
-                  _HomeActionButton(
-                    label: 'Mensuales',
-                    icon: Icons.calendar_month,
-                    onPressed: () => context.go('/admin/mensuales'),
                   ),
                   const SizedBox(height: 10),
                   _HomeActionButton(

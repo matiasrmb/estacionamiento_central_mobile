@@ -8,6 +8,7 @@ class Mensual {
   final String patente;
   final int tarifaMensual;
   final int? diaVencimiento;
+  final String? telefono;
   final String? periodoActual;
   final String? estadoPago;
   final bool pagado;
@@ -19,6 +20,7 @@ class Mensual {
     required this.patente,
     required this.tarifaMensual,
     required this.diaVencimiento,
+    required this.telefono,
     required this.periodoActual,
     required this.estadoPago,
     required this.pagado,
@@ -33,6 +35,7 @@ class Mensual {
       patente: json['patente']?.toString() ?? '',
       tarifaMensual: _int(json['tarifa_mensual']),
       diaVencimiento: _nullableInt(json['dia_vencimiento']),
+      telefono: json['telefono']?.toString(),
       periodoActual: json['periodo_actual']?.toString(),
       estadoPago: estadoPago,
       pagado: _bool(json['pagado_periodo_actual']) || estadoPago == 'pagado',
@@ -79,11 +82,20 @@ class MensualesApi {
     }
   }
 
-  Future<void> crear({required String patente, int? tarifaMensual}) async {
+  Future<void> crear({
+    required String patente,
+    required int tarifaMensual,
+    required int diaVencimiento,
+    String? telefono,
+  }) async {
     await _send(() {
-      final data = <String, dynamic>{'patente': patente};
-      if (tarifaMensual != null) {
-        data['tarifa_mensual'] = tarifaMensual;
+      final data = <String, dynamic>{
+        'patente': patente,
+        'tarifa_mensual': tarifaMensual,
+        'dia_vencimiento': diaVencimiento,
+      };
+      if (telefono != null && telefono.trim().isNotEmpty) {
+        data['telefono'] = telefono.trim();
       }
       return client.dio.post('/mensuales', data: data);
     });
@@ -93,6 +105,7 @@ class MensualesApi {
     required int idVehiculo,
     required int tarifaMensual,
     required int diaVencimiento,
+    String? telefono,
   }) async {
     await _send(() {
       return client.dio.put(
@@ -100,6 +113,7 @@ class MensualesApi {
         data: {
           'tarifa_mensual': tarifaMensual,
           'dia_vencimiento': diaVencimiento,
+          'telefono': telefono?.trim(),
         },
       );
     });

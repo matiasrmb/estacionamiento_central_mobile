@@ -46,7 +46,7 @@ void main() {
     expect(find.text('Gastos'), findsOneWidget);
   });
 
-  testWidgets('home exposes Cierres and Gastos for operators only', (
+  testWidgets('home exposes Mensuales, Cierres and Gastos for operators only', (
     tester,
   ) async {
     await AppServices.I.init();
@@ -63,11 +63,16 @@ void main() {
       200,
       scrollable: find.byType(Scrollable),
     );
-
     expect(find.text('Cierres'), findsOneWidget);
     expect(find.text('Gastos'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Mensuales'),
+      200,
+      scrollable: find.byType(Scrollable),
+    );
+
+    expect(find.text('Mensuales'), findsOneWidget);
     expect(find.text('Reportes'), findsNothing);
-    expect(find.text('Mensuales'), findsNothing);
     expect(find.text('Usuarios'), findsNothing);
     expect(find.text('Configuración'), findsNothing);
   });
