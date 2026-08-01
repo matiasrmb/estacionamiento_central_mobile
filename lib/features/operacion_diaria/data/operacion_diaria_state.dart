@@ -1,3 +1,5 @@
+import '../../../core/plate.dart';
+
 enum OperacionDiariaAction {
   ingreso,
   salida,
@@ -62,10 +64,16 @@ class OperacionDiariaInlineActions {
   Future<OperacionDiariaInlineResult> registrarIngresoDesdeBusqueda(
     String plateInput,
   ) async {
-    final patente = normalizePlateInput(plateInput);
+    final patente = normalizePlate(plateInput);
     if (patente.isEmpty) {
       return const OperacionDiariaInlineResult(
         message: 'Ingresá una patente para registrar ingreso.',
+        shouldClearPlate: false,
+      );
+    }
+    if (!isValidPlate(patente)) {
+      return const OperacionDiariaInlineResult(
+        message: 'Patente inválida. Usa ABCD12, ABC12, AB123CD o ABC123.',
         shouldClearPlate: false,
       );
     }

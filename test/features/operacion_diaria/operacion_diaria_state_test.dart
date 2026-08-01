@@ -460,5 +460,34 @@ void main() {
       );
       expect(failed.shouldClearPlate, isTrue);
     });
+
+    test(
+      'skips local Sunmi printing while mobile printing is disabled',
+      () async {
+        var printed = false;
+        final actions = OperacionDiariaInlineActions(
+          registrarIngreso: (patente) async => {
+            'ingreso': {'patente': patente},
+          },
+          previewSalida: (_) async => <String, dynamic>{},
+          confirmarSalida: (_) async => <String, dynamic>{},
+          iniciarLavado: (_, _) async {},
+          finalizarLavado: (_) async {},
+          printIngreso: ({required patente, required response}) async {
+            printed = true;
+          },
+          isPrinterAvailable: () => false,
+          refresh: () async {},
+        );
+
+        final result = await actions.registrarIngresoDesdeBusqueda('abc123');
+
+        expect(printed, isFalse);
+        expect(
+          result.message,
+          'Ingreso registrado. Comprobante durable enviado a PC / Print Agent.',
+        );
+      },
+    );
   });
 }

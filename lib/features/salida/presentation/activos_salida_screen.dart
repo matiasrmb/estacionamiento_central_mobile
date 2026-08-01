@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/app_services.dart';
+import '../../../core/storage.dart';
 import '../../../ui/theme.dart';
 import '../data/activos_api.dart';
 import '../data/salida_api.dart';
@@ -18,6 +19,7 @@ class ActivosSalidaScreen extends StatefulWidget {
 class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
   late final SalidaRepository _repo;
   final SunmiPrinterService _sunmi = SunmiPrinterService();
+  final _store = SecureStore();
 
   bool _loadingList = false;
   String? _errorList;
@@ -32,7 +34,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
   String? _errorConfirm;
 
   bool _sunmiAvailable = false;
-  bool _imprimirSunmi = false;
+  bool _mobileLocalPrintingEnabled = false;
   String? _sunmiCopyStatus;
 
   @override
@@ -49,12 +51,14 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
   }
 
   Future<void> _bootstrap() async {
+    final mobileLocalPrintingEnabled = await _store
+        .readMobileLocalPrintingEnabled();
     await _sunmi.init();
 
     if (!mounted) return;
     setState(() {
       _sunmiAvailable = _sunmi.isReady;
-      _imprimirSunmi = false;
+      _mobileLocalPrintingEnabled = mobileLocalPrintingEnabled;
     });
 
     await _loadActivos();
@@ -193,7 +197,7 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
     try {
       final confirm = await _repo.confirmar(idIngreso);
 
-      if (_imprimirSunmi && _sunmiAvailable) {
+      if (_mobileLocalPrintingEnabled && _sunmiAvailable) {
         try {
           final patente = _getPatente(sel);
           final lines = TicketFormatter.salidaFromConfirmResponse(
@@ -497,21 +501,6 @@ class _ActivosSalidaScreenState extends State<ActivosSalidaScreen> {
                           _kv('Detalle', (preview['detalle'] ?? '').toString()),
                           const SizedBox(height: 8),
                         ],
-                        if (_sunmiAvailable)
-                          CheckboxListTile(
-                            contentPadding: EdgeInsets.zero,
-                            value: _imprimirSunmi,
-                            onChanged: (v) {
-                              setState(() => _imprimirSunmi = v ?? false);
-                            },
-                            title: const Text(
-                              'Imprimir copia local opcional en Sunmi',
-                            ),
-                            subtitle: const Text(
-                              'No reemplaza el comprobante durable enviado a PC / Print Agent.',
-                            ),
-                            controlAffinity: ListTileControlAffinity.leading,
-                          ),
                         if (_sunmiCopyStatus != null) ...[
                           _kv('Copia local Sunmi', _sunmiCopyStatus!),
                           const SizedBox(height: 8),

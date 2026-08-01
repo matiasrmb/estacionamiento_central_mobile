@@ -9,6 +9,7 @@ class SecureStore {
 
   // Config (nuevo)
   static const _kBaseUrl = 'api_base_url';
+  static const _kMobileLocalPrintingEnabled = 'mobile_local_printing_enabled';
 
   Future<void> saveSession({
     required String token,
@@ -25,12 +26,22 @@ class SecureStore {
   Future<String?> readRole() => _storage.read(key: _kRole);
 
   // --- Config: Base URL (nuevo) ---
-  Future<void> saveBaseUrl(String url) => _storage.write(key: _kBaseUrl, value: url.trim());
+  Future<void> saveBaseUrl(String url) =>
+      _storage.write(key: _kBaseUrl, value: url.trim());
   Future<String?> readBaseUrl() => _storage.read(key: _kBaseUrl);
   Future<void> clearBaseUrl() => _storage.delete(key: _kBaseUrl);
 
+  Future<void> saveMobileLocalPrintingEnabled(bool enabled) => _storage.write(
+    key: _kMobileLocalPrintingEnabled,
+    value: enabled.toString(),
+  );
+
+  Future<bool> readMobileLocalPrintingEnabled() async =>
+      (await _storage.read(key: _kMobileLocalPrintingEnabled)) == 'true';
+
   // --- Helpers genéricos (opcional pero útil) ---
-  Future<void> writeString(String key, String value) => _storage.write(key: key, value: value);
+  Future<void> writeString(String key, String value) =>
+      _storage.write(key: key, value: value);
   Future<String?> readString(String key) => _storage.read(key: key);
   Future<void> deleteKey(String key) => _storage.delete(key: key);
 

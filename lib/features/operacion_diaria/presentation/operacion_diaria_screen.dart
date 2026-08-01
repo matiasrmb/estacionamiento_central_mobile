@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/app_services.dart';
+import '../../../core/storage.dart';
 import '../../../ui/theme.dart';
 import '../../ingreso/data/ingreso_api.dart';
 import '../../ingreso/data/ingreso_repository.dart';
@@ -35,12 +36,14 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
   late final SalidaRepository _salidaRepository;
   late final OperacionDiariaInlineActions _inlineActions;
   final SunmiPrinterService _sunmi = SunmiPrinterService();
+  final _store = SecureStore();
 
   bool _loading = true;
   bool _actionLoading = false;
   bool _dialogOpen = false;
   bool _isForeground = true;
   bool _sunmiAvailable = false;
+  bool _mobileLocalPrintingEnabled = false;
   String? _error;
   List<OperacionDiariaRecord> _records = [];
   List<Map<String, dynamic>> _categoriasLavado = [];
@@ -97,16 +100,21 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
             );
             await _sunmi.printLines(lines);
           },
-      isPrinterAvailable: () => _sunmiAvailable,
+      isPrinterAvailable: () => _mobileLocalPrintingEnabled && _sunmiAvailable,
       refresh: _load,
     );
     _bootstrap();
   }
 
   Future<void> _bootstrap() async {
+    final mobileLocalPrintingEnabled = await _store
+        .readMobileLocalPrintingEnabled();
     await _sunmi.init();
     if (mounted) {
-      setState(() => _sunmiAvailable = _sunmi.isReady);
+      setState(() {
+        _mobileLocalPrintingEnabled = mobileLocalPrintingEnabled;
+        _sunmiAvailable = _sunmi.isReady;
+      });
     }
     await _load();
     if (mounted && _isForeground) _startAutoRefresh();
@@ -299,16 +307,25 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _SalidaPreviewLine(label: 'Patente', value: record.patente),
-            _SalidaPreviewLine(label: 'A cobrar ahora', value: _money(preview['a_cobrar_ahora'] ?? preview['monto'])),
+            _SalidaPreviewLine(
+              label: 'A cobrar ahora',
+              value: _money(preview['a_cobrar_ahora'] ?? preview['monto']),
+            ),
             if ((preview['total_noches_prepagadas'] ?? 0) != 0)
               _SalidaPreviewLine(
                 label: 'Noche pagada',
                 value: _money(preview['total_noches_prepagadas']),
               ),
             if ((preview['minutos_extra_antes_noche'] ?? 0) != 0)
-              _SalidaPreviewLine(label: 'Extra antes de noche', value: '${preview['minutos_extra_antes_noche']} min'),
+              _SalidaPreviewLine(
+                label: 'Extra antes de noche',
+                value: '${preview['minutos_extra_antes_noche']} min',
+              ),
             if ((preview['minutos_extra_despues_noche'] ?? 0) != 0)
-              _SalidaPreviewLine(label: 'Extra después de noche', value: '${preview['minutos_extra_despues_noche']} min'),
+              _SalidaPreviewLine(
+                label: 'Extra después de noche',
+                value: '${preview['minutos_extra_despues_noche']} min',
+              ),
             if (minutos != null)
               _SalidaPreviewLine(label: 'Minutos', value: '$minutos min'),
             if (detalle.isNotEmpty)
@@ -444,13 +461,13 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
           ElevatedButton(
             onPressed: () {
               try {
-                Navigator.of(context).pop(
-                  _calcularMinutosPorHorarios(horaIngreso, horaSalida),
-                );
+                Navigator.of(
+                  context,
+                ).pop(_calcularMinutosPorHorarios(horaIngreso, horaSalida));
               } on FormatException catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.message)),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(e.message)));
               }
             },
             child: const Text('Cotizar'),
@@ -495,7 +512,9 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
             for (final item in lavados)
               SimpleDialogOption(
                 onPressed: () => Navigator.of(context).pop(item),
-                child: Text('${item['nombre']} - ${_money(item['valor_lavado'])}'),
+                child: Text(
+                  '${item['nombre']} - ${_money(item['valor_lavado'])}',
+                ),
               ),
           ],
         ),
@@ -509,9 +528,9 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
       });
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo cotizar lavado: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo cotizar lavado: $e')));
     }
   }
 
@@ -525,7 +544,9 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
           initialValue: montoText,
           onChanged: (value) => montoText = value,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Monto mensual negociado'),
+          decoration: const InputDecoration(
+            labelText: 'Monto mensual negociado',
+          ),
         ),
         actions: [
           TextButton(
@@ -533,9 +554,8 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
             child: const Text('Cancelar'),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.of(
-              context,
-            ).pop(int.tryParse(montoText.trim()) ?? 0),
+            onPressed: () =>
+                Navigator.of(context).pop(int.tryParse(montoText.trim()) ?? 0),
             child: const Text('Cotizar'),
           ),
         ],
@@ -577,9 +597,13 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
       if (items is List) {
         for (final item in items.whereType<Map>()) {
           if (item['tipo'] == 'lavado') {
-            lines.add('Lavado ${item['tipo_lavado']}: ${_money(item['monto'])}');
+            lines.add(
+              'Lavado ${item['tipo_lavado']}: ${_money(item['monto'])}',
+            );
           } else if (item['tipo'] == 'estadia') {
-            lines.add('Estadía ${item['minutos']} min: ${_money(item['monto'])}');
+            lines.add(
+              'Estadía ${item['minutos']} min: ${_money(item['monto'])}',
+            );
           }
         }
       }
@@ -598,9 +622,9 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('No se pudo cotizar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('No se pudo cotizar: $e')));
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/app_services.dart';
+import '../../../../core/plate.dart';
 import '../../../../core/api_error.dart';
 import '../../../../core/roles.dart';
 import '../../../../core/storage.dart';
@@ -250,13 +251,19 @@ class _MensualFormDialogState extends State<_MensualFormDialog> {
   }
 
   Future<void> _save() async {
-    final patente = _patenteCtrl.text.trim().toUpperCase().replaceAll(' ', '');
+    final patente = normalizePlate(_patenteCtrl.text);
     final tarifa = int.tryParse(
       _tarifaCtrl.text.trim().isEmpty ? '0' : _tarifaCtrl.text.trim(),
     );
     final vencimiento = int.tryParse(_vencimientoCtrl.text.trim());
     final telefono = _telefonoCtrl.text.trim();
-    if (patente.isEmpty || tarifa == null || tarifa <= 0) {
+    if (!isValidPlate(patente)) {
+      setState(
+        () => _error = 'Patente inválida. Usa ABCD12, ABC12, AB123CD o ABC123.',
+      );
+      return;
+    }
+    if (tarifa == null || tarifa <= 0) {
       setState(() => _error = 'Ingresa patente y una tarifa mayor a cero.');
       return;
     }

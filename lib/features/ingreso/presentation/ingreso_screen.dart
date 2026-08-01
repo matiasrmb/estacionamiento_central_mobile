@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/app_services.dart';
+import '../../../core/plate.dart';
+import '../../../core/storage.dart';
 import '../../../ui/theme.dart';
 import '../data/ingreso_api.dart';
 import '../data/ingreso_repository.dart';
@@ -26,7 +28,9 @@ class _IngresoScreenState extends State<IngresoScreen> {
 
   late final IngresoRepository _repo;
   final SunmiPrinterService _sunmi = SunmiPrinterService();
+  final _store = SecureStore();
   bool _sunmiAvailable = false;
+  bool _mobileLocalPrintingEnabled = false;
   String? _sunmiCopyStatus;
 
   @override
@@ -38,9 +42,12 @@ class _IngresoScreenState extends State<IngresoScreen> {
   }
 
   Future<void> _bootstrap() async {
+    final mobileLocalPrintingEnabled = await _store
+        .readMobileLocalPrintingEnabled();
     await _sunmi.init();
     if (!mounted) return;
     setState(() {
+      _mobileLocalPrintingEnabled = mobileLocalPrintingEnabled;
       _sunmiAvailable = _sunmi.isReady;
     });
   }
@@ -51,14 +58,6 @@ class _IngresoScreenState extends State<IngresoScreen> {
     super.dispose();
   }
 
-  String _normalizePatente(String s) =>
-      s.trim().toUpperCase().replaceAll(' ', '');
-
-  bool _patenteValidaBasica(String s) {
-    if (s.length < 4 || s.length > 8) return false;
-    return RegExp(r'^[A-Z0-9]+$').hasMatch(s);
-  }
-
   Future<void> _submit() async {
     setState(() {
       _error = null;
@@ -67,7 +66,7 @@ class _IngresoScreenState extends State<IngresoScreen> {
       _loading = true;
     });
 
-    final patente = _normalizePatente(_patenteCtrl.text);
+    final patente = normalizePlate(_patenteCtrl.text);
 
     try {
       final data = await _repo.registrar(
@@ -83,7 +82,7 @@ class _IngresoScreenState extends State<IngresoScreen> {
       _patenteCtrl.clear();
 
       // This is a best-effort local copy; the API has already created the durable receipt.
-      if (_sunmiAvailable) {
+      if (_mobileLocalPrintingEnabled && _sunmiAvailable) {
         try {
           final lines = TicketFormatter.ingresoFromResponse(
             patente: patente,
@@ -106,6 +105,8 @@ class _IngresoScreenState extends State<IngresoScreen> {
             ),
           );
         }
+      } else if (!_mobileLocalPrintingEnabled) {
+        _sunmiCopyStatus = 'Copia local Sunmi desactivada en configuración.';
       } else {
         _sunmiCopyStatus =
             'Copia local Sunmi no disponible en este dispositivo.';
@@ -174,10 +175,10 @@ class _IngresoScreenState extends State<IngresoScreen> {
                           if (_formKey.currentState!.validate()) _submit();
                         },
                         validator: (v) {
-                          final s = _normalizePatente(v ?? '');
+                          final s = normalizePlate(v ?? '');
                           if (s.isEmpty) return 'Ingresa una patente';
-                          if (!_patenteValidaBasica(s)) {
-                            return 'Patente inválida';
+                          if (!isValidPlate(s)) {
+                            return 'Patente inválida. Usa ABCD12, ABC12, AB123CD o ABC123.';
                           }
                           return null;
                         },
@@ -273,7 +274,11 @@ class _IngresoScreenState extends State<IngresoScreen> {
                       _kv(
                         'Copia local Sunmi',
                         _sunmiCopyStatus ??
-                            (_sunmiAvailable ? 'Pendiente' : 'No disponible'),
+                            (!_mobileLocalPrintingEnabled
+                                ? 'Desactivada en configuración'
+                                : (_sunmiAvailable
+                                      ? 'Pendiente'
+                                      : 'No disponible')),
                       ),
                     ],
                   ),

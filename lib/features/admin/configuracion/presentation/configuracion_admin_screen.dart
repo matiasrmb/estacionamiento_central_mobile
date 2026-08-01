@@ -2,20 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/app_services.dart';
+import '../../../../core/storage.dart';
 import '../data/configuracion_api.dart';
 
 class ConfiguracionAdminScreen extends StatefulWidget {
   const ConfiguracionAdminScreen({super.key});
 
   @override
-  State<ConfiguracionAdminScreen> createState() => _ConfiguracionAdminScreenState();
+  State<ConfiguracionAdminScreen> createState() =>
+      _ConfiguracionAdminScreenState();
 }
 
 class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
   late final ConfiguracionApi _api;
+  final _store = SecureStore();
   final _controllers = <String, TextEditingController>{};
   bool _loading = true;
   bool _saving = false;
+  bool _mobileLocalPrintingEnabled = false;
   String? _error;
 
   static const _fields = <String, String>{
@@ -42,18 +46,43 @@ class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
 
   Future<void> _load() async {
     try {
-      final config = await _api.obtener();
+      final results = await Future.wait([
+        _api.obtener(),
+        _store.readMobileLocalPrintingEnabled(),
+      ]);
+      final config = results[0] as Map<String, dynamic>;
+      final mobileLocalPrintingEnabled = results[1] as bool;
       for (final entry in _fields.entries) {
-        _controllers[entry.key] = TextEditingController(text: config[entry.key] ?? '');
+        _controllers[entry.key] = TextEditingController(
+          text: config[entry.key] ?? '',
+        );
       }
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() {
+        _mobileLocalPrintingEnabled = mobileLocalPrintingEnabled;
+        _loading = false;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _error = 'No se pudo cargar configuración: $e';
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _setMobileLocalPrintingEnabled(bool enabled) async {
+    setState(() => _mobileLocalPrintingEnabled = enabled);
+    try {
+      await _store.saveMobileLocalPrintingEnabled(enabled);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _mobileLocalPrintingEnabled = !enabled);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo guardar la preferencia de impresión: $e'),
+        ),
+      );
     }
   }
 
@@ -70,9 +99,9 @@ class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
     try {
       await _api.actualizar(values);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Configuración guardada')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Configuración guardada')));
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = 'No se pudo guardar: $e');
@@ -108,6 +137,19 @@ class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
                   Text(_error!, style: const TextStyle(color: Colors.red)),
                   const SizedBox(height: 12),
                 ],
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _mobileLocalPrintingEnabled,
+                  onChanged: _setMobileLocalPrintingEnabled,
+                  title: const Text(
+                    'Imprimir copias locales en este dispositivo',
+                  ),
+                  subtitle: const Text(
+                    'Activa la impresión local en equipos Sunmi. No modifica los comprobantes enviados a PC.',
+                  ),
+                ),
+                const Divider(),
+                const SizedBox(height: 12),
                 for (final entry in _fields.entries) ...[
                   TextField(
                     controller: _controllers[entry.key],
