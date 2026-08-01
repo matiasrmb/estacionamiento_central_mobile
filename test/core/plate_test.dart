@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('accepts all supported normalized formats', () {
-    for (final plate in ['ABCD12', 'ABC12', 'AB123CD', 'ABC123']) {
+    for (final plate in ['ABCD12', 'ABC12', 'AB123CD', 'ABC123', 'AB1234']) {
       expect(isValidPlate(plate), isTrue);
     }
   });
