@@ -6,9 +6,12 @@ import '../../../core/storage.dart';
 import '../../../ui/theme.dart';
 import '../../auth/data/auth_api.dart';
 import '../../auth/data/auth_repository.dart';
+import '../data/shift_summary_api.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final ShiftSummaryApi? shiftSummaryApi;
+
+  const HomeScreen({super.key, this.shiftSummaryApi});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -17,8 +20,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _store = SecureStore();
   late final AuthRepository _authRepo;
+  late final ShiftSummaryApi _shiftSummaryApi;
   String _user = '';
   String _role = '';
+  ShiftSummary? _shiftSummary;
+  String? _shiftSummaryError;
+  bool _loadingShiftSummary = false;
 
   @override
   void initState() {
@@ -27,6 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
       api: AuthApi(AppServices.I.client),
       store: _store,
     );
+    _shiftSummaryApi =
+        widget.shiftSummaryApi ?? ShiftSummaryApi(AppServices.I.client);
     _loadSession();
   }
 
@@ -38,6 +47,29 @@ class _HomeScreenState extends State<HomeScreen> {
       _user = u;
       _role = r;
     });
+    if (AppRoles.isOperatorOrAdmin(r)) {
+      _loadShiftSummary();
+    }
+  }
+
+  Future<void> _loadShiftSummary() async {
+    if (_loadingShiftSummary) return;
+    setState(() {
+      _loadingShiftSummary = true;
+      _shiftSummaryError = null;
+    });
+    try {
+      final summary = await _shiftSummaryApi.obtenerResumen();
+      if (!mounted) return;
+      setState(() => _shiftSummary = summary);
+    } catch (_) {
+      if (!mounted) return;
+      setState(
+        () => _shiftSummaryError = 'No se pudo cargar el resumen del turno.',
+      );
+    } finally {
+      if (mounted) setState(() => _loadingShiftSummary = false);
+    }
   }
 
   Future<void> _logout() async {
@@ -49,6 +81,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isAdmin = AppRoles.isAdmin(_role);
+    final canViewShiftSummary =
+        _role.isNotEmpty && AppRoles.isOperatorOrAdmin(_role);
     final canManageCierresYGastos =
         _role.isNotEmpty && AppRoles.isOperatorOrAdmin(_role);
     final canManageMensuales =
@@ -63,6 +97,12 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.settings),
             tooltip: 'Servidor (LAN)',
           ),
+          if (canViewShiftSummary)
+            IconButton(
+              onPressed: _loadingShiftSummary ? null : _loadShiftSummary,
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Actualizar resumen',
+            ),
           IconButton(
             onPressed: _logout,
             icon: const Icon(Icons.logout),
@@ -71,140 +111,288 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.sidebar,
-                borderRadius: BorderRadius.circular(12),
+        child: RefreshIndicator(
+          onRefresh: canViewShiftSummary ? _loadShiftSummary : () async {},
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.sidebar,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Panel principal',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleLarge?.copyWith(color: Colors.white),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Usuario: ${_user.isEmpty ? '-' : _user}',
+                      style: const TextStyle(color: Color(0xFFF9FAFB)),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Rol: ${_role.isEmpty ? '-' : _role}',
+                      style: const TextStyle(color: Color(0xFFCBD5E1)),
+                    ),
+                  ],
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 18),
+              if (canViewShiftSummary) ...[
+                _ShiftSummarySection(
+                  summary: _shiftSummary,
+                  loading: _loadingShiftSummary,
+                  error: _shiftSummaryError,
+                  onRetry: _loadShiftSummary,
+                ),
+                const SizedBox(height: 16),
+              ],
+              _SectionCard(
+                title: 'Operación diaria',
+                subtitle: 'Ingresos, salidas y servicios rápidos.',
                 children: [
-                  Text(
-                    'Panel principal',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleLarge?.copyWith(color: Colors.white),
+                  _HomeActionButton(
+                    label: 'Operación diaria unificada',
+                    icon: Icons.search,
+                    onPressed: () => context.go('/operacion-diaria'),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Usuario: ${_user.isEmpty ? '-' : _user}',
-                    style: const TextStyle(color: Color(0xFFF9FAFB)),
+                  const SizedBox(height: 10),
+                  _HomeActionButton(
+                    label: 'Ingreso',
+                    icon: Icons.login,
+                    onPressed: () => context.go('/ingreso'),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    'Rol: ${_role.isEmpty ? '-' : _role}',
-                    style: const TextStyle(color: Color(0xFFCBD5E1)),
+                  const SizedBox(height: 10),
+                  _HomeActionButton(
+                    label: 'Activos / Salida',
+                    icon: Icons.logout,
+                    onPressed: () => context.go('/activos'),
+                  ),
+                  const SizedBox(height: 10),
+                  _HomeActionButton(
+                    label: 'Lavados / Baño',
+                    icon: Icons.local_car_wash,
+                    onPressed: () => context.go('/operaciones'),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 18),
-            _SectionCard(
-              title: 'Operación diaria',
-              subtitle: 'Ingresos, salidas y servicios rápidos.',
-              children: [
-                _HomeActionButton(
-                  label: 'Operación diaria unificada',
-                  icon: Icons.search,
-                  onPressed: () => context.go('/operacion-diaria'),
-                ),
-                const SizedBox(height: 10),
-                _HomeActionButton(
-                  label: 'Ingreso',
-                  icon: Icons.login,
-                  onPressed: () => context.go('/ingreso'),
-                ),
-                const SizedBox(height: 10),
-                _HomeActionButton(
-                  label: 'Activos / Salida',
-                  icon: Icons.logout,
-                  onPressed: () => context.go('/activos'),
-                ),
-                const SizedBox(height: 10),
-                _HomeActionButton(
-                  label: 'Lavados / Baño',
-                  icon: Icons.local_car_wash,
-                  onPressed: () => context.go('/operaciones'),
+              if (canManageCierresYGastos) ...[
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'Cierres y gastos',
+                  subtitle: 'Control del cierre diario y gastos operacionales.',
+                  children: [
+                    _HomeActionButton(
+                      label: 'Cierres',
+                      icon: Icons.lock_clock,
+                      onPressed: () => context.go('/admin/cierres'),
+                    ),
+                    const SizedBox(height: 10),
+                    _HomeActionButton(
+                      label: 'Gastos',
+                      icon: Icons.receipt_long,
+                      onPressed: () => context.go('/admin/gastos'),
+                    ),
+                  ],
                 ),
               ],
+              if (canManageMensuales) ...[
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'Clientes mensuales',
+                  subtitle: 'Gestión de clientes y pagos mensuales.',
+                  children: [
+                    _HomeActionButton(
+                      label: 'Mensuales',
+                      icon: Icons.calendar_month,
+                      onPressed: () => context.go('/admin/mensuales'),
+                    ),
+                  ],
+                ),
+              ],
+              if (isAdmin) ...[
+                const SizedBox(height: 16),
+                _SectionCard(
+                  title: 'Administración',
+                  subtitle: 'Gestión y control del estacionamiento.',
+                  children: [
+                    _HomeActionButton(
+                      label: 'Reportes',
+                      icon: Icons.assessment,
+                      onPressed: () => context.go('/admin/reportes'),
+                    ),
+                    const SizedBox(height: 10),
+                    _HomeActionButton(
+                      label: 'Configuración',
+                      icon: Icons.settings,
+                      onPressed: () => context.go('/admin/configuracion'),
+                    ),
+                    const SizedBox(height: 10),
+                    _HomeActionButton(
+                      label: 'Tarifas',
+                      icon: Icons.payments,
+                      onPressed: () => context.go('/admin/tarifas'),
+                    ),
+                    const SizedBox(height: 10),
+                    _HomeActionButton(
+                      label: 'Usuarios',
+                      icon: Icons.people,
+                      onPressed: () => context.go('/admin/usuarios'),
+                    ),
+                    const SizedBox(height: 10),
+                    _HomeActionButton(
+                      label: 'Asistencias',
+                      icon: Icons.badge,
+                      onPressed: () => context.go('/admin/asistencias'),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShiftSummarySection extends StatelessWidget {
+  final ShiftSummary? summary;
+  final bool loading;
+  final String? error;
+  final Future<void> Function() onRetry;
+
+  const _ShiftSummarySection({
+    required this.summary,
+    required this.loading,
+    required this.error,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (loading && summary == null) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(14),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              SizedBox(width: 10),
+              Text('Cargando resumen del turno...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (error != null && summary == null) {
+      return Card(
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text('No se pudo cargar el resumen del turno.'),
+              ),
+              IconButton(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Reintentar',
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final data = summary;
+    if (data == null) return const SizedBox.shrink();
+    return _SectionCard(
+      title: 'Resumen del turno',
+      subtitle: loading
+          ? 'Actualizando...'
+          : 'Información al ${data.consultadoA.replaceFirst('T', ' ')}.',
+      children: [
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            _ShiftMetricCard(
+              label: 'Vehículos activos',
+              value: '${data.vehiculosActivos}',
             ),
-            if (canManageCierresYGastos) ...[
-              const SizedBox(height: 16),
-              _SectionCard(
-                title: 'Cierres y gastos',
-                subtitle: 'Control del cierre diario y gastos operacionales.',
-                children: [
-                  _HomeActionButton(
-                    label: 'Cierres',
-                    icon: Icons.lock_clock,
-                    onPressed: () => context.go('/admin/cierres'),
-                  ),
-                  const SizedBox(height: 10),
-                  _HomeActionButton(
-                    label: 'Gastos',
-                    icon: Icons.receipt_long,
-                    onPressed: () => context.go('/admin/gastos'),
-                  ),
-                ],
-              ),
-            ],
-            if (canManageMensuales) ...[
-              const SizedBox(height: 16),
-              _SectionCard(
-                title: 'Clientes mensuales',
-                subtitle: 'Gestión de clientes y pagos mensuales.',
-                children: [
-                  _HomeActionButton(
-                    label: 'Mensuales',
-                    icon: Icons.calendar_month,
-                    onPressed: () => context.go('/admin/mensuales'),
-                  ),
-                ],
-              ),
-            ],
-            if (isAdmin) ...[
-              const SizedBox(height: 16),
-              _SectionCard(
-                title: 'Administración',
-                subtitle: 'Gestión y control del estacionamiento.',
-                children: [
-                  _HomeActionButton(
-                    label: 'Reportes',
-                    icon: Icons.assessment,
-                    onPressed: () => context.go('/admin/reportes'),
-                  ),
-                  const SizedBox(height: 10),
-                  _HomeActionButton(
-                    label: 'Configuración',
-                    icon: Icons.settings,
-                    onPressed: () => context.go('/admin/configuracion'),
-                  ),
-                  const SizedBox(height: 10),
-                  _HomeActionButton(
-                    label: 'Tarifas',
-                    icon: Icons.payments,
-                    onPressed: () => context.go('/admin/tarifas'),
-                  ),
-                  const SizedBox(height: 10),
-                  _HomeActionButton(
-                    label: 'Usuarios',
-                    icon: Icons.people,
-                    onPressed: () => context.go('/admin/usuarios'),
-                  ),
-                  const SizedBox(height: 10),
-                  _HomeActionButton(
-                    label: 'Asistencias',
-                    icon: Icons.badge,
-                    onPressed: () => context.go('/admin/asistencias'),
-                  ),
-                ],
-              ),
-            ],
+            _ShiftMetricCard(
+              label: 'Usos de baños',
+              value: '${data.usosBanos} · ${_money(data.usosBanosMonto)}',
+            ),
+            _ShiftMetricCard(
+              label: 'Total turno',
+              value: _money(data.totalTurno),
+            ),
+            _ShiftMetricCard(
+              label: 'Actual en caja',
+              value: _money(data.totalActualCaja),
+            ),
+            _ShiftMetricCard(
+              label: 'Neto en caja',
+              value: _money(data.netoCaja),
+            ),
           ],
+        ),
+        if (error != null) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Expanded(child: Text('No se pudo actualizar el resumen.')),
+              TextButton(onPressed: onRetry, child: const Text('Reintentar')),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  static String _money(int amount) => '\$${amount.toString()}';
+}
+
+class _ShiftMetricCard extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _ShiftMetricCard({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 150,
+      child: Material(
+        color: AppColors.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: const BorderSide(color: AppColors.border),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 4),
+              Text(value, style: Theme.of(context).textTheme.titleMedium),
+            ],
+          ),
         ),
       ),
     );
