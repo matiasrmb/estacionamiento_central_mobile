@@ -111,6 +111,12 @@ class ApiErrorMapper {
             statusCode: status,
           );
         }
+        if (body.contains('DAILY_CLOSE_IN_PROGRESS')) {
+          return ApiException(
+            'Hay otro cierre diario en curso. Reintenta cuando finalice.',
+            statusCode: status,
+          );
+        }
         return ApiException(
           'Conflicto de datos. Revisa el estado actual del registro.',
           statusCode: status,

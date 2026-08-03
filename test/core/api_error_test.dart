@@ -51,4 +51,25 @@ void main() {
       'No se puede registrar en modo Noche porque no está disponible. Verifica que esté habilitado y tenga un valor mayor que cero.',
     );
   });
+
+  test('surfaces concurrent daily close message', () {
+    final requestOptions = RequestOptions(path: '/cierres');
+    final error = DioException(
+      requestOptions: requestOptions,
+      response: Response(
+        requestOptions: requestOptions,
+        statusCode: 409,
+        data: {'detail': 'DAILY_CLOSE_IN_PROGRESS'},
+      ),
+      type: DioExceptionType.badResponse,
+    );
+
+    final mapped = ApiErrorMapper.fromDio(error);
+
+    expect(mapped.statusCode, 409);
+    expect(
+      mapped.message,
+      'Hay otro cierre diario en curso. Reintenta cuando finalice.',
+    );
+  });
 }
