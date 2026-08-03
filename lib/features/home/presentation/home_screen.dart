@@ -325,26 +325,44 @@ class _ShiftSummarySection extends StatelessWidget {
           ? 'Actualizando...'
           : 'Información al ${data.consultadoA.replaceFirst('T', ' ')}.',
       children: [
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
+        Column(
           children: [
-            _ShiftMetricCard(
-              label: 'Vehículos activos',
-              value: '${data.vehiculosActivos}',
+            Row(
+              children: [
+                Expanded(
+                  child: _ShiftMetricCard(
+                    label: 'Vehículos activos',
+                    value: '${data.vehiculosActivos}',
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _ShiftMetricCard(
+                    label: 'Usos de baños',
+                    value: '${data.usosBanos} · ${_money(data.usosBanosMonto)}',
+                  ),
+                ),
+              ],
             ),
-            _ShiftMetricCard(
-              label: 'Usos de baños',
-              value: '${data.usosBanos} · ${_money(data.usosBanosMonto)}',
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: _ShiftMetricCard(
+                    label: 'Total turno',
+                    value: _money(data.totalTurno),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _ShiftMetricCard(
+                    label: 'Actual en caja',
+                    value: _money(data.totalActualCaja),
+                  ),
+                ),
+              ],
             ),
-            _ShiftMetricCard(
-              label: 'Total turno',
-              value: _money(data.totalTurno),
-            ),
-            _ShiftMetricCard(
-              label: 'Actual en caja',
-              value: _money(data.totalActualCaja),
-            ),
+            const SizedBox(height: 10),
             _ShiftMetricCard(
               label: 'Neto en caja',
               value: _money(data.netoCaja),
@@ -376,7 +394,7 @@ class _ShiftMetricCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 150,
+      width: double.infinity,
       child: Material(
         color: AppColors.surface,
         shape: RoundedRectangleBorder(
