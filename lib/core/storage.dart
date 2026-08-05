@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecureStore {
@@ -6,6 +8,7 @@ class SecureStore {
   static const _kToken = 'jwt_token';
   static const _kUser = 'user_name';
   static const _kRole = 'user_role';
+  static const _kDeviceId = 'device_id';
 
   // Config (nuevo)
   static const _kBaseUrl = 'api_base_url';
@@ -24,6 +27,18 @@ class SecureStore {
   Future<String?> readToken() => _storage.read(key: _kToken);
   Future<String?> readUser() => _storage.read(key: _kUser);
   Future<String?> readRole() => _storage.read(key: _kRole);
+
+  Future<String> getOrCreateDeviceId() async {
+    final existing = await _storage.read(key: _kDeviceId);
+    if (existing != null && existing.isNotEmpty) return existing;
+
+    final random = Random.secure();
+    final id = List.generate(32, (_) => random.nextInt(16).toRadixString(16)).join();
+    await _storage.write(key: _kDeviceId, value: 'mobile-$id');
+    return 'mobile-$id';
+  }
+
+  Future<String?> readDeviceId() => _storage.read(key: _kDeviceId);
 
   // --- Config: Base URL (nuevo) ---
   Future<void> saveBaseUrl(String url) =>

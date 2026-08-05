@@ -8,7 +8,12 @@ class AuthRepository {
   AuthRepository({required this.api, required this.store});
 
   Future<void> login(String usuario, String clave) async {
-    final data = await api.login(usuario: usuario, clave: clave);
+    final deviceId = await store.getOrCreateDeviceId();
+    final data = await api.login(
+      usuario: usuario,
+      clave: clave,
+      deviceId: deviceId,
+    );
     final token = data['access_token'] as String;
     final rol = data['rol'] as String;
 

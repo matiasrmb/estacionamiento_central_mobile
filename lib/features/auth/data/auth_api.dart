@@ -9,11 +9,12 @@ class AuthApi {
   Future<Map<String, dynamic>> login({
     required String usuario,
     required String clave,
+    required String deviceId,
   }) async {
     try {
       final Response res = await client.dio.post(
         '/auth/login',
-        data: {'usuario': usuario, 'clave': clave},
+        data: {'usuario': usuario, 'clave': clave, 'device_id': deviceId},
       );
       return Map<String, dynamic>.from(res.data);
     } on DioException catch (e) {
