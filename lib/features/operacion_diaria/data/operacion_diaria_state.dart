@@ -15,6 +15,7 @@ typedef ConfirmarSalidaFn =
 typedef IniciarLavadoFn =
     Future<void> Function(int idIngreso, String categoriaLavado);
 typedef FinalizarLavadoFn = Future<void> Function(int idIngreso);
+typedef MarcarEsperaFn = Future<void> Function(int idIngreso);
 typedef PrintIngresoFn =
     Future<void> Function({
       required String patente,
@@ -44,6 +45,7 @@ class OperacionDiariaInlineActions {
   final ConfirmarSalidaFn confirmarSalida;
   final IniciarLavadoFn iniciarLavado;
   final FinalizarLavadoFn finalizarLavado;
+  final MarcarEsperaFn? marcarEspera;
   final PrintIngresoFn? printIngreso;
   final PrintSalidaFn? printSalida;
   final bool Function()? isPrinterAvailable;
@@ -55,6 +57,7 @@ class OperacionDiariaInlineActions {
     required this.confirmarSalida,
     required this.iniciarLavado,
     required this.finalizarLavado,
+    this.marcarEspera,
     this.printIngreso,
     this.printSalida,
     this.isPrinterAvailable,
@@ -166,6 +169,30 @@ class OperacionDiariaInlineActions {
     await refresh();
     return const OperacionDiariaInlineResult(
       message: 'Lavado finalizado',
+      shouldClearPlate: false,
+    );
+  }
+
+  Future<OperacionDiariaInlineResult> marcarEnEsperaDesdeRegistro(
+    OperacionDiariaRecord record,
+  ) async {
+    if (record.enEspera) {
+      return const OperacionDiariaInlineResult(
+        message: 'El vehículo ya está en espera.',
+        shouldClearPlate: false,
+      );
+    }
+    final action = marcarEspera;
+    if (action == null) {
+      return const OperacionDiariaInlineResult(
+        message: 'La acción de espera no está disponible.',
+        shouldClearPlate: false,
+      );
+    }
+    await action(record.idIngreso);
+    await refresh();
+    return const OperacionDiariaInlineResult(
+      message: 'Vehículo marcado en espera.',
       shouldClearPlate: false,
     );
   }

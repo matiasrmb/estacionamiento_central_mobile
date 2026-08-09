@@ -26,6 +26,11 @@ void main() {
     expect(find.text('Mensualidades'), findsOneWidget);
     expect(find.text('2 pagos registrados'), findsOneWidget);
     expect(find.text(r'$70000'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Noches prepagadas'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Noches prepagadas'), findsOneWidget);
     expect(find.text('1 cobros registrados'), findsOneWidget);
     expect(find.text(r'$5000'), findsOneWidget);
@@ -54,7 +59,7 @@ class _TotalsAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    final response = options.path.contains('/reportes/')
+    final response = options.path.contains('reportes/movimientos')
         ? {
             'items': [],
             'total_movimientos': 0,
@@ -64,6 +69,8 @@ class _TotalsAdapter implements HttpClientAdapter {
             'total_noches': 1,
             'total_noches_monto': 5000,
             'total_general': 75000,
+            'total_gastos': 0,
+            'total_neto': 75000,
           }
         : options.path.endsWith('/pendiente')
         ? {

@@ -76,8 +76,10 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
             idIngreso: idIngreso,
             categoriaLavado: categoriaLavado,
           ),
-      finalizarLavado: (idIngreso) =>
-          _operacionesApi.finalizarLavado(idIngreso: idIngreso),
+       finalizarLavado: (idIngreso) =>
+           _operacionesApi.finalizarLavado(idIngreso: idIngreso),
+       marcarEspera: (idIngreso) =>
+           _operacionesApi.marcarEnEspera(idIngreso: idIngreso),
       printIngreso: ({required patente, required response}) async {
         final lines = TicketFormatter.ingresoFromResponse(
           patente: patente,
@@ -384,6 +386,30 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
     );
   }
 
+  Future<void> _marcarEnEspera(OperacionDiariaRecord record) async {
+    final confirmed = await _showDialogWhileRefreshingIsPaused<bool>(
+      builder: (context) => AlertDialog(
+        title: const Text('Marcar en espera'),
+        content: Text('¿Deseas marcar ${record.patente} en espera?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await _runInlineAction(
+        () => _inlineActions.marcarEnEsperaDesdeRegistro(record),
+      );
+    }
+  }
+
   String _money(dynamic value) {
     final amount = value is num ? value : num.tryParse('$value') ?? 0;
     return '\$${amount.round()}';
@@ -675,6 +701,18 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
                   record.enLavado ? 'Finalizar lavado' : 'Iniciar lavado',
                 ),
               ),
+              OutlinedButton.icon(
+                onPressed: record.enEspera
+                    ? null
+                    : () {
+                        Navigator.of(context).pop();
+                        _marcarEnEspera(record);
+                      },
+                icon: const Icon(Icons.pause_circle_outline),
+                label: Text(
+                  record.enEspera ? 'Ya está en espera' : 'Marcar en espera',
+                ),
+              ),
             ],
           ),
         ),
@@ -826,7 +864,7 @@ class _OperacionDiariaScreenState extends State<OperacionDiariaScreen>
           if (_loading) const Center(child: CircularProgressIndicator()),
           if (!_loading) ...[
             Text(
-              'Activos recientes',
+              'Activos recientes (${_records.length})',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),

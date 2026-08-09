@@ -198,12 +198,24 @@ class _ReportesAdminScreenState extends State<ReportesAdminScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _SummaryCard(
-                    title: 'Total',
+                    title: 'Total bruto',
                     value: _money(reporte['total_general']),
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            _SummaryCard(
+              title: 'Neto',
+              value: _money(reporte['total_neto']),
+            ),
+            if ((reporte['total_gastos'] ?? 0) != 0) ...[
+              const SizedBox(height: 8),
+              _SummaryCard(
+                title: 'Gastos',
+                value: _money(reporte['total_gastos']),
+              ),
+            ],
             const SizedBox(height: 16),
             if (reporte.containsKey('total_mensualidades')) ...[
               Card(
@@ -249,6 +261,10 @@ class _ReportesAdminScreenState extends State<ReportesAdminScreen> {
                       ? Icons.wc
                       : item['tipo'] == 'noche'
                       ? Icons.nightlight_round
+                      : item['tipo'] == 'lavado_solo'
+                      ? Icons.local_car_wash
+                      : item['tipo'] == 'gasto'
+                      ? Icons.receipt_long
                       : Icons.directions_car,
                 ),
                 title: Text(
