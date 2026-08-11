@@ -108,6 +108,30 @@ void main() {
     expect(find.text('Neto en caja'), findsOneWidget);
     expect(find.text('7 · \$2100'), findsOneWidget);
   });
+
+  testWidgets('privacy mode hides summary values and reveals a card on tap', (
+    tester,
+  ) async {
+    await prepareServices();
+    await AppServices.I.store.saveSession(
+      token: 'token',
+      user: 'operador',
+      role: 'operador',
+    );
+    await AppServices.I.store.saveMetricsPrivacyModeEnabled(true);
+
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Oculto'), findsNWidgets(5));
+    expect(find.text('\$48200'), findsNothing);
+    await tester.tap(find.text('Total turno'));
+    await tester.pump();
+    expect(find.text('\$48200'), findsOneWidget);
+    await tester.tap(find.text('Total turno'));
+    await tester.pump();
+    expect(find.text('\$48200'), findsNothing);
+  });
 }
 
 class _SummaryAdapter implements HttpClientAdapter {

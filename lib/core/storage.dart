@@ -13,6 +13,7 @@ class SecureStore {
   // Config (nuevo)
   static const _kBaseUrl = 'api_base_url';
   static const _kMobileLocalPrintingEnabled = 'mobile_local_printing_enabled';
+  static const _kMetricsPrivacyModeEnabled = 'metrics_privacy_mode_enabled';
 
   Future<void> saveSession({
     required String token,
@@ -33,7 +34,10 @@ class SecureStore {
     if (existing != null && existing.isNotEmpty) return existing;
 
     final random = Random.secure();
-    final id = List.generate(32, (_) => random.nextInt(16).toRadixString(16)).join();
+    final id = List.generate(
+      32,
+      (_) => random.nextInt(16).toRadixString(16),
+    ).join();
     await _storage.write(key: _kDeviceId, value: 'mobile-$id');
     return 'mobile-$id';
   }
@@ -53,6 +57,14 @@ class SecureStore {
 
   Future<bool> readMobileLocalPrintingEnabled() async =>
       (await _storage.read(key: _kMobileLocalPrintingEnabled)) == 'true';
+
+  Future<void> saveMetricsPrivacyModeEnabled(bool enabled) => _storage.write(
+    key: _kMetricsPrivacyModeEnabled,
+    value: enabled.toString(),
+  );
+
+  Future<bool> readMetricsPrivacyModeEnabled() async =>
+      (await _storage.read(key: _kMetricsPrivacyModeEnabled)) == 'true';
 
   // --- Helpers genéricos (opcional pero útil) ---
   Future<void> writeString(String key, String value) =>

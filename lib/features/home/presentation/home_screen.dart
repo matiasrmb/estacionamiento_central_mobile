@@ -26,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   ShiftSummary? _shiftSummary;
   String? _shiftSummaryError;
   bool _loadingShiftSummary = false;
+  bool _metricsPrivacyModeEnabled = false;
 
   @override
   void initState() {
@@ -42,10 +43,13 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadSession() async {
     final u = await _store.readUser() ?? '';
     final r = await _store.readRole() ?? '';
+    final metricsPrivacyModeEnabled = await _store
+        .readMetricsPrivacyModeEnabled();
     if (!mounted) return;
     setState(() {
       _user = u;
       _role = r;
+      _metricsPrivacyModeEnabled = metricsPrivacyModeEnabled;
     });
     if (AppRoles.isOperatorOrAdmin(r)) {
       _loadShiftSummary();
@@ -151,6 +155,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   loading: _loadingShiftSummary,
                   error: _shiftSummaryError,
                   onRetry: _loadShiftSummary,
+                  privacyModeEnabled: _metricsPrivacyModeEnabled,
                 ),
                 const SizedBox(height: 16),
               ],
@@ -268,12 +273,14 @@ class _ShiftSummarySection extends StatelessWidget {
   final bool loading;
   final String? error;
   final Future<void> Function() onRetry;
+  final bool privacyModeEnabled;
 
   const _ShiftSummarySection({
     required this.summary,
     required this.loading,
     required this.error,
     required this.onRetry,
+    required this.privacyModeEnabled,
   });
 
   @override
@@ -333,6 +340,8 @@ class _ShiftSummarySection extends StatelessWidget {
                   child: _ShiftMetricCard(
                     label: 'Vehículos activos',
                     value: '${data.vehiculosActivos}',
+                    icon: Icons.directions_car,
+                    privacyModeEnabled: privacyModeEnabled,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -340,6 +349,8 @@ class _ShiftSummarySection extends StatelessWidget {
                   child: _ShiftMetricCard(
                     label: 'Usos de baños',
                     value: '${data.usosBanos} · ${_money(data.usosBanosMonto)}',
+                    icon: Icons.wc,
+                    privacyModeEnabled: privacyModeEnabled,
                   ),
                 ),
               ],
@@ -351,6 +362,8 @@ class _ShiftSummarySection extends StatelessWidget {
                   child: _ShiftMetricCard(
                     label: 'Total turno',
                     value: _money(data.totalTurno),
+                    icon: Icons.payments,
+                    privacyModeEnabled: privacyModeEnabled,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -358,6 +371,8 @@ class _ShiftSummarySection extends StatelessWidget {
                   child: _ShiftMetricCard(
                     label: 'Actual en caja',
                     value: _money(data.totalActualCaja),
+                    icon: Icons.account_balance_wallet,
+                    privacyModeEnabled: privacyModeEnabled,
                   ),
                 ),
               ],
@@ -366,6 +381,8 @@ class _ShiftSummarySection extends StatelessWidget {
             _ShiftMetricCard(
               label: 'Neto en caja',
               value: _money(data.netoCaja),
+              icon: Icons.account_balance,
+              privacyModeEnabled: privacyModeEnabled,
             ),
           ],
         ),
@@ -385,14 +402,29 @@ class _ShiftSummarySection extends StatelessWidget {
   static String _money(int amount) => '\$${amount.toString()}';
 }
 
-class _ShiftMetricCard extends StatelessWidget {
+class _ShiftMetricCard extends StatefulWidget {
   final String label;
   final String value;
+  final IconData icon;
+  final bool privacyModeEnabled;
 
-  const _ShiftMetricCard({required this.label, required this.value});
+  const _ShiftMetricCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.privacyModeEnabled,
+  });
+
+  @override
+  State<_ShiftMetricCard> createState() => _ShiftMetricCardState();
+}
+
+class _ShiftMetricCardState extends State<_ShiftMetricCard> {
+  bool _revealed = false;
 
   @override
   Widget build(BuildContext context) {
+    final valueVisible = !widget.privacyModeEnabled || _revealed;
     return SizedBox(
       width: double.infinity,
       child: Material(
@@ -401,15 +433,40 @@ class _ShiftMetricCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           side: const BorderSide(color: AppColors.border),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 4),
-              Text(value, style: Theme.of(context).textTheme.titleMedium),
-            ],
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: widget.privacyModeEnabled
+              ? () => setState(() => _revealed = !_revealed)
+              : null,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(widget.icon, size: 18),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        widget.label,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ),
+                    if (widget.privacyModeEnabled)
+                      Icon(
+                        valueVisible ? Icons.visibility : Icons.visibility_off,
+                        size: 18,
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  valueVisible ? widget.value : 'Oculto',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
           ),
         ),
       ),

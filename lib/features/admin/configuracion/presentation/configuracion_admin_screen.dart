@@ -20,6 +20,7 @@ class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
   bool _loading = true;
   bool _saving = false;
   bool _mobileLocalPrintingEnabled = false;
+  bool _metricsPrivacyModeEnabled = false;
   String? _error;
 
   static const _fields = <String, String>{
@@ -49,9 +50,11 @@ class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
       final results = await Future.wait([
         _api.obtener(),
         _store.readMobileLocalPrintingEnabled(),
+        _store.readMetricsPrivacyModeEnabled(),
       ]);
       final config = results[0] as Map<String, dynamic>;
       final mobileLocalPrintingEnabled = results[1] as bool;
+      final metricsPrivacyModeEnabled = results[2] as bool;
       for (final entry in _fields.entries) {
         _controllers[entry.key] = TextEditingController(
           text: config[entry.key] ?? '',
@@ -60,6 +63,7 @@ class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
       if (!mounted) return;
       setState(() {
         _mobileLocalPrintingEnabled = mobileLocalPrintingEnabled;
+        _metricsPrivacyModeEnabled = metricsPrivacyModeEnabled;
         _loading = false;
       });
     } catch (e) {
@@ -82,6 +86,19 @@ class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
         SnackBar(
           content: Text('No se pudo guardar la preferencia de impresión: $e'),
         ),
+      );
+    }
+  }
+
+  Future<void> _setMetricsPrivacyModeEnabled(bool enabled) async {
+    setState(() => _metricsPrivacyModeEnabled = enabled);
+    try {
+      await _store.saveMetricsPrivacyModeEnabled(enabled);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _metricsPrivacyModeEnabled = !enabled);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo guardar el modo privacidad: $e')),
       );
     }
   }
@@ -146,6 +163,15 @@ class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
                   ),
                   subtitle: const Text(
                     'Activa la impresión local en equipos Sunmi. No modifica los comprobantes enviados a PC.',
+                  ),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _metricsPrivacyModeEnabled,
+                  onChanged: _setMetricsPrivacyModeEnabled,
+                  title: const Text('Modo privacidad en métricas'),
+                  subtitle: const Text(
+                    'Oculta los valores de las tarjetas hasta pasar el mouse o tocar.',
                   ),
                 ),
                 const Divider(),
