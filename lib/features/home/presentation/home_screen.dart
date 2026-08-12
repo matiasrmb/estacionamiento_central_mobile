@@ -369,8 +369,10 @@ class _ShiftSummarySection extends StatelessWidget {
                 const SizedBox(width: 10),
                 Expanded(
                   child: _ShiftMetricCard(
-                    label: 'Actual en caja',
-                    value: _money(data.totalActualCaja),
+                    label: 'Total proyectado',
+                    value: data.totalProyectado == null
+                        ? 'No disponible'
+                        : _money(data.totalProyectado!),
                     icon: Icons.account_balance_wallet,
                     privacyModeEnabled: privacyModeEnabled,
                   ),
@@ -445,26 +447,32 @@ class _ShiftMetricCardState extends State<_ShiftMetricCard> {
               children: [
                 Row(
                   children: [
-                    Icon(widget.icon, size: 18),
-                    const SizedBox(width: 6),
+                    if (valueVisible) ...[
+                      Icon(widget.icon, size: 18),
+                      const SizedBox(width: 6),
+                    ],
                     Expanded(
                       child: Text(
                         widget.label,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ),
-                    if (widget.privacyModeEnabled)
-                      Icon(
-                        valueVisible ? Icons.visibility : Icons.visibility_off,
-                        size: 18,
-                      ),
+                    if (widget.privacyModeEnabled && valueVisible)
+                      Icon(Icons.visibility, size: 18),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  valueVisible ? widget.value : 'Oculto',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
+                if (valueVisible)
+                  Text(
+                    widget.value,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  )
+                else
+                  Icon(
+                    widget.icon,
+                    key: ValueKey('shift-metric-hidden-${widget.label}'),
+                    size: 32,
+                  ),
               ],
             ),
           ),

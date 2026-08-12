@@ -10,6 +10,8 @@ class ShiftSummary {
   final int usosBanosMonto;
   final int totalTurno;
   final int totalActualCaja;
+  final int estimadoActivos;
+  final int? totalProyectado;
   final int netoCaja;
 
   const ShiftSummary({
@@ -19,6 +21,8 @@ class ShiftSummary {
     required this.usosBanosMonto,
     required this.totalTurno,
     required this.totalActualCaja,
+    required this.estimadoActivos,
+    required this.totalProyectado,
     required this.netoCaja,
   });
 
@@ -28,6 +32,12 @@ class ShiftSummary {
       return value is num ? value.toInt() : int.tryParse('$value') ?? 0;
     }
 
+    int? optionalAmount(String key) {
+      if (!json.containsKey(key)) return null;
+      final value = json[key];
+      return value is num ? value.toInt() : int.tryParse('$value');
+    }
+
     return ShiftSummary(
       consultadoA: '${json['consultado_a'] ?? ''}',
       vehiculosActivos: amount('vehiculos_activos'),
@@ -35,6 +45,8 @@ class ShiftSummary {
       usosBanosMonto: amount('usos_banos_monto'),
       totalTurno: amount('total_turno'),
       totalActualCaja: amount('total_actual_caja'),
+      estimadoActivos: amount('estimado_activos'),
+      totalProyectado: optionalAmount('total_proyectado'),
       netoCaja: amount('neto_caja'),
     );
   }

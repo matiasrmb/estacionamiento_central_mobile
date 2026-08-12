@@ -27,7 +27,18 @@ void main() {
     expect(summary.vehiculosActivos, 12);
     expect(summary.usosBanosMonto, 2100);
     expect(summary.totalTurno, 48200);
+    expect(summary.estimadoActivos, 6100);
+    expect(summary.totalProyectado, 54300);
     expect(summary.netoCaja, 55600);
+  });
+
+  test('does not derive projected total from legacy fields', () {
+    final summary = ShiftSummary.fromJson({
+      'total_turno': 48200,
+      'total_actual_caja': 60100,
+    });
+
+    expect(summary.totalProyectado, isNull);
   });
 }
 
@@ -49,6 +60,8 @@ class _SummaryAdapter implements HttpClientAdapter {
         'usos_banos_monto': 2100,
         'total_turno': 48200,
         'total_actual_caja': 60100,
+        'estimado_activos': 6100,
+        'total_proyectado': 54300,
         'neto_caja': 55600,
       }),
       200,
