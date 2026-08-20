@@ -12,13 +12,8 @@ class SalidaRepository {
   Future<Map<String, dynamic>> preview(int idIngreso) =>
       salidaApi.previewSalida(idIngreso: idIngreso);
 
-  Future<Map<String, dynamic>> confirmar(
-    int idIngreso, {
-    bool imprimirSunmi = false,
-  }) => salidaApi.confirmarSalida(
-    idIngreso: idIngreso,
-    imprimirSunmi: imprimirSunmi,
-  );
+  Future<Map<String, dynamic>> confirmar(int idIngreso) =>
+      salidaApi.confirmarSalida(idIngreso: idIngreso);
 
   Future<Map<String, dynamic>> finalizarNoche(int idIngreso) =>
       salidaApi.finalizarNoche(idIngreso: idIngreso);

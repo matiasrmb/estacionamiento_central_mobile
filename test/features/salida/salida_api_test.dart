@@ -30,10 +30,24 @@ void main() {
       ('POST', '/api/v1/salidas/12/noche/convertir'),
     ]);
   });
+
+  test('confirms salida without the deprecated Sunmi payload field', () async {
+    final adapter = _RecordingAdapter();
+    final client = ApiClient(store: SecureStore())
+      ..dio.options.baseUrl = 'http://example.test/api/v1'
+      ..dio.httpClientAdapter = adapter;
+    final api = SalidaApi(client);
+
+    await api.confirmarSalida(idIngreso: 12);
+
+    expect(adapter.requests, [('POST', '/api/v1/salidas/confirm')]);
+    expect(adapter.requestBodies, [{'id_ingreso': 12}]);
+  });
 }
 
 class _RecordingAdapter implements HttpClientAdapter {
   final requests = <(String, String)>[];
+  final requestBodies = <Map<String, dynamic>>[];
 
   @override
   Future<ResponseBody> fetch(
@@ -42,6 +56,9 @@ class _RecordingAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) async {
     requests.add((options.method, options.uri.path));
+    if (options.data is Map) {
+      requestBodies.add(Map<String, dynamic>.from(options.data as Map));
+    }
     return ResponseBody.fromString(
       jsonEncode({}),
       200,
