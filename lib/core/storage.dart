@@ -48,7 +48,6 @@ class SecureStore {
   Future<void> saveBaseUrl(String url) =>
       _storage.write(key: _kBaseUrl, value: url.trim());
   Future<String?> readBaseUrl() => _storage.read(key: _kBaseUrl);
-  Future<void> clearBaseUrl() => _storage.delete(key: _kBaseUrl);
 
   Future<void> saveMobileLocalPrintingEnabled(bool enabled) => _storage.write(
     key: _kMobileLocalPrintingEnabled,
@@ -65,12 +64,6 @@ class SecureStore {
 
   Future<bool> readMetricsPrivacyModeEnabled() async =>
       (await _storage.read(key: _kMetricsPrivacyModeEnabled)) == 'true';
-
-  // --- Helpers genéricos (opcional pero útil) ---
-  Future<void> writeString(String key, String value) =>
-      _storage.write(key: key, value: value);
-  Future<String?> readString(String key) => _storage.read(key: key);
-  Future<void> deleteKey(String key) => _storage.delete(key: key);
 
   Future<void> clear() async {
     await _storage.delete(key: _kToken);
