@@ -1,3 +1,5 @@
+import '../../../core/plate.dart';
+
 enum OperacionDiariaAction {
   ingreso,
   salida,
@@ -13,6 +15,7 @@ typedef ConfirmarSalidaFn =
 typedef IniciarLavadoFn =
     Future<void> Function(int idIngreso, String categoriaLavado);
 typedef FinalizarLavadoFn = Future<void> Function(int idIngreso);
+typedef MarcarEsperaFn = Future<void> Function(int idIngreso);
 typedef PrintIngresoFn =
     Future<void> Function({
       required String patente,
@@ -42,6 +45,7 @@ class OperacionDiariaInlineActions {
   final ConfirmarSalidaFn confirmarSalida;
   final IniciarLavadoFn iniciarLavado;
   final FinalizarLavadoFn finalizarLavado;
+  final MarcarEsperaFn? marcarEspera;
   final PrintIngresoFn? printIngreso;
   final PrintSalidaFn? printSalida;
   final bool Function()? isPrinterAvailable;
@@ -53,6 +57,7 @@ class OperacionDiariaInlineActions {
     required this.confirmarSalida,
     required this.iniciarLavado,
     required this.finalizarLavado,
+    this.marcarEspera,
     this.printIngreso,
     this.printSalida,
     this.isPrinterAvailable,
@@ -62,10 +67,16 @@ class OperacionDiariaInlineActions {
   Future<OperacionDiariaInlineResult> registrarIngresoDesdeBusqueda(
     String plateInput,
   ) async {
-    final patente = normalizePlateInput(plateInput);
+    final patente = normalizePlate(plateInput);
     if (patente.isEmpty) {
       return const OperacionDiariaInlineResult(
         message: 'Ingresá una patente para registrar ingreso.',
+        shouldClearPlate: false,
+      );
+    }
+    if (!isValidPlate(patente)) {
+      return const OperacionDiariaInlineResult(
+        message: 'Patente inválida. Usa ABCD12, ABC12, AB123CD o ABC123.',
         shouldClearPlate: false,
       );
     }
@@ -158,6 +169,30 @@ class OperacionDiariaInlineActions {
     await refresh();
     return const OperacionDiariaInlineResult(
       message: 'Lavado finalizado',
+      shouldClearPlate: false,
+    );
+  }
+
+  Future<OperacionDiariaInlineResult> marcarEnEsperaDesdeRegistro(
+    OperacionDiariaRecord record,
+  ) async {
+    if (record.enEspera) {
+      return const OperacionDiariaInlineResult(
+        message: 'El vehículo ya está en espera.',
+        shouldClearPlate: false,
+      );
+    }
+    final action = marcarEspera;
+    if (action == null) {
+      return const OperacionDiariaInlineResult(
+        message: 'La acción de espera no está disponible.',
+        shouldClearPlate: false,
+      );
+    }
+    await action(record.idIngreso);
+    await refresh();
+    return const OperacionDiariaInlineResult(
+      message: 'Vehículo marcado en espera.',
       shouldClearPlate: false,
     );
   }

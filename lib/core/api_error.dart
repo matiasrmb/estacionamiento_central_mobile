@@ -111,12 +111,24 @@ class ApiErrorMapper {
             statusCode: status,
           );
         }
+        if (body.contains('DAILY_CLOSE_IN_PROGRESS')) {
+          return ApiException(
+            'Hay otro cierre diario en curso. Reintenta cuando finalice.',
+            statusCode: status,
+          );
+        }
         return ApiException(
           'Conflicto de datos. Revisa el estado actual del registro.',
           statusCode: status,
         );
 
       case 422:
+        if (body.contains('NOCHES_NOT_AVAILABLE')) {
+          return ApiException(
+            'No se puede registrar en modo Noche porque no está disponible. Verifica que esté habilitado y tenga un valor mayor que cero.',
+            statusCode: status,
+          );
+        }
         return ApiException(
           'Datos inválidos o incompletos.',
           statusCode: status,

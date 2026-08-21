@@ -198,12 +198,24 @@ class _ReportesAdminScreenState extends State<ReportesAdminScreen> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: _SummaryCard(
-                    title: 'Total',
-                    value: _money(reporte['total_recaudado']),
+                    title: 'Total bruto',
+                    value: _money(reporte['total_general']),
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 8),
+            _SummaryCard(
+              title: 'Neto',
+              value: _money(reporte['total_neto']),
+            ),
+            if ((reporte['total_gastos'] ?? 0) != 0) ...[
+              const SizedBox(height: 8),
+              _SummaryCard(
+                title: 'Gastos',
+                value: _money(reporte['total_gastos']),
+              ),
+            ],
             const SizedBox(height: 16),
             if (reporte.containsKey('total_mensualidades')) ...[
               Card(
@@ -220,6 +232,21 @@ class _ReportesAdminScreenState extends State<ReportesAdminScreen> {
               ),
               const SizedBox(height: 16),
             ],
+            if (reporte.containsKey('total_noches')) ...[
+              Card(
+                child: ListTile(
+                  title: const Text('Noches prepagadas'),
+                  subtitle: Text(
+                    '${reporte['total_noches'] ?? 0} cobros registrados',
+                  ),
+                  trailing: Text(
+                    _money(reporte['total_noches_monto']),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
           ],
           Text('Movimientos', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 8),
@@ -230,7 +257,15 @@ class _ReportesAdminScreenState extends State<ReportesAdminScreen> {
               margin: const EdgeInsets.only(bottom: 12),
               child: ListTile(
                 leading: Icon(
-                  item['tipo'] == 'bano' ? Icons.wc : Icons.directions_car,
+                  item['tipo'] == 'bano'
+                      ? Icons.wc
+                      : item['tipo'] == 'noche'
+                      ? Icons.nightlight_round
+                      : item['tipo'] == 'lavado_solo'
+                      ? Icons.local_car_wash
+                      : item['tipo'] == 'gasto'
+                      ? Icons.receipt_long
+                      : Icons.directions_car,
                 ),
                 title: Text(
                   '${item['patente'] ?? ''} • ${_money(item['tarifa_aplicada'])}',

@@ -2,20 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/app_services.dart';
+import '../../../../core/storage.dart';
 import '../data/configuracion_api.dart';
 
 class ConfiguracionAdminScreen extends StatefulWidget {
   const ConfiguracionAdminScreen({super.key});
 
   @override
-  State<ConfiguracionAdminScreen> createState() => _ConfiguracionAdminScreenState();
+  State<ConfiguracionAdminScreen> createState() =>
+      _ConfiguracionAdminScreenState();
 }
 
 class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
   late final ConfiguracionApi _api;
+  final _store = SecureStore();
   final _controllers = <String, TextEditingController>{};
   bool _loading = true;
   bool _saving = false;
+  bool _mobileLocalPrintingEnabled = false;
+  bool _metricsPrivacyModeEnabled = false;
   String? _error;
 
   static const _fields = <String, String>{
@@ -24,6 +29,8 @@ class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
     'valor_minuto': 'Valor minuto',
     'tarifa_hora': 'Tarifa hora',
     'valor_bano': 'Valor baño',
+    'noches_activo': 'Noches activas (1 sí, 0 no)',
+    'noches_valor': 'Modo Noche: valor prepago',
     'lavado_citycar': 'Lavado CityCar',
     'lavado_suv': 'Lavado SUV',
     'lavado_camioneta': 'Lavado Camioneta',
@@ -40,18 +47,59 @@ class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
 
   Future<void> _load() async {
     try {
-      final config = await _api.obtener();
+      final results = await Future.wait([
+        _api.obtener(),
+        _store.readMobileLocalPrintingEnabled(),
+        _store.readMetricsPrivacyModeEnabled(),
+      ]);
+      final config = results[0] as Map<String, dynamic>;
+      final mobileLocalPrintingEnabled = results[1] as bool;
+      final metricsPrivacyModeEnabled = results[2] as bool;
       for (final entry in _fields.entries) {
-        _controllers[entry.key] = TextEditingController(text: config[entry.key] ?? '');
+        _controllers[entry.key] = TextEditingController(
+          text: config[entry.key] ?? '',
+        );
       }
       if (!mounted) return;
-      setState(() => _loading = false);
+      setState(() {
+        _mobileLocalPrintingEnabled = mobileLocalPrintingEnabled;
+        _metricsPrivacyModeEnabled = metricsPrivacyModeEnabled;
+        _loading = false;
+      });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         _error = 'No se pudo cargar configuración: $e';
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _setMobileLocalPrintingEnabled(bool enabled) async {
+    setState(() => _mobileLocalPrintingEnabled = enabled);
+    try {
+      await _store.saveMobileLocalPrintingEnabled(enabled);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _mobileLocalPrintingEnabled = !enabled);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo guardar la preferencia de impresión: $e'),
+        ),
+      );
+    }
+  }
+
+  Future<void> _setMetricsPrivacyModeEnabled(bool enabled) async {
+    setState(() => _metricsPrivacyModeEnabled = enabled);
+    try {
+      await _store.saveMetricsPrivacyModeEnabled(enabled);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _metricsPrivacyModeEnabled = !enabled);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo guardar el modo privacidad: $e')),
+      );
     }
   }
 
@@ -68,9 +116,9 @@ class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
     try {
       await _api.actualizar(values);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Configuración guardada')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Configuración guardada')));
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = 'No se pudo guardar: $e');
@@ -106,10 +154,34 @@ class _ConfiguracionAdminScreenState extends State<ConfiguracionAdminScreen> {
                   Text(_error!, style: const TextStyle(color: Colors.red)),
                   const SizedBox(height: 12),
                 ],
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _mobileLocalPrintingEnabled,
+                  onChanged: _setMobileLocalPrintingEnabled,
+                  title: const Text(
+                    'Imprimir copias locales en este dispositivo',
+                  ),
+                  subtitle: const Text(
+                    'Activa la impresión local en equipos Sunmi. No modifica los comprobantes enviados a PC.',
+                  ),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _metricsPrivacyModeEnabled,
+                  onChanged: _setMetricsPrivacyModeEnabled,
+                  title: const Text('Modo privacidad en métricas'),
+                  subtitle: const Text(
+                    'Oculta los valores de las tarjetas hasta pasar el mouse o tocar.',
+                  ),
+                ),
+                const Divider(),
+                const SizedBox(height: 12),
                 for (final entry in _fields.entries) ...[
                   TextField(
                     controller: _controllers[entry.key],
-                    keyboardType: entry.key == 'modo_cobro' ? TextInputType.text : TextInputType.number,
+                    keyboardType: entry.key == 'modo_cobro'
+                        ? TextInputType.text
+                        : TextInputType.number,
                     decoration: InputDecoration(
                       labelText: entry.value,
                       border: const OutlineInputBorder(),

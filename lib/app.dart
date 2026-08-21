@@ -19,21 +19,6 @@ import 'features/admin/tarifas/presentation/tarifas_admin_screen.dart';
 import 'features/admin/usuarios/presentation/usuarios_admin_screen.dart';
 import 'ui/theme.dart';
 
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
-  const PlaceholderScreen({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: const Center(
-        child: Text('Pendiente de implementar en el siguiente paso'),
-      ),
-    );
-  }
-}
-
 class App extends StatelessWidget {
   App({super.key}) {
     AppServices.I.setUnauthorizedHandler(() async {

@@ -414,6 +414,39 @@ void main() {
       },
     );
 
+    test('marks a normal active record as waiting and refreshes the list', () async {
+      var waitingId = 0;
+      var refreshed = false;
+      final actions = OperacionDiariaInlineActions(
+        registrarIngreso: (_) async => <String, dynamic>{},
+        previewSalida: (_) async => <String, dynamic>{},
+        confirmarSalida: (_) async => <String, dynamic>{},
+        iniciarLavado: (_, _) async {},
+        finalizarLavado: (_) async {},
+        marcarEspera: (idIngreso) async => waitingId = idIngreso,
+        refresh: () async => refreshed = true,
+      );
+      final normal = OperacionDiariaRecord(
+        idIngreso: 93,
+        patente: 'WAIT93',
+        fechaHoraIngreso: DateTime.parse('2026-07-01T10:00:00'),
+      );
+      final alreadyWaiting = OperacionDiariaRecord(
+        idIngreso: 94,
+        patente: 'WAIT94',
+        fechaHoraIngreso: DateTime.parse('2026-07-01T10:00:00'),
+        enEspera: true,
+      );
+
+      final marked = await actions.marcarEnEsperaDesdeRegistro(normal);
+      final skipped = await actions.marcarEnEsperaDesdeRegistro(alreadyWaiting);
+
+      expect(waitingId, 93);
+      expect(refreshed, isTrue);
+      expect(marked.message, 'Vehículo marcado en espera.');
+      expect(skipped.message, 'El vehículo ya está en espera.');
+    });
+
     test('reports Sunmi as a non-durable local copy when it fails', () async {
       final unavailablePrinter = OperacionDiariaInlineActions(
         registrarIngreso: (patente) async => {
@@ -460,5 +493,34 @@ void main() {
       );
       expect(failed.shouldClearPlate, isTrue);
     });
+
+    test(
+      'skips local Sunmi printing while mobile printing is disabled',
+      () async {
+        var printed = false;
+        final actions = OperacionDiariaInlineActions(
+          registrarIngreso: (patente) async => {
+            'ingreso': {'patente': patente},
+          },
+          previewSalida: (_) async => <String, dynamic>{},
+          confirmarSalida: (_) async => <String, dynamic>{},
+          iniciarLavado: (_, _) async {},
+          finalizarLavado: (_) async {},
+          printIngreso: ({required patente, required response}) async {
+            printed = true;
+          },
+          isPrinterAvailable: () => false,
+          refresh: () async {},
+        );
+
+        final result = await actions.registrarIngresoDesdeBusqueda('abc123');
+
+        expect(printed, isFalse);
+        expect(
+          result.message,
+          'Ingreso registrado. Comprobante durable enviado a PC / Print Agent.',
+        );
+      },
+    );
   });
 }

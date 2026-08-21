@@ -14,7 +14,7 @@ void main() {
 
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 
-  testWidgets('shows monthly totals in reports when returned by the API', (
+  testWidgets('shows monthly and prepaid night totals in reports when returned by the API', (
     tester,
   ) async {
     await AppServices.I.init();
@@ -26,6 +26,14 @@ void main() {
     expect(find.text('Mensualidades'), findsOneWidget);
     expect(find.text('2 pagos registrados'), findsOneWidget);
     expect(find.text(r'$70000'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Noches prepagadas'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Noches prepagadas'), findsOneWidget);
+    expect(find.text('1 cobros registrados'), findsOneWidget);
+    expect(find.text(r'$5000'), findsOneWidget);
   });
 
   testWidgets('shows monthly totals in the pending close when provided', (
@@ -39,6 +47,8 @@ void main() {
 
     expect(find.text('Mensualidades:'), findsOneWidget);
     expect(find.text(r'2 / $70000'), findsOneWidget);
+    expect(find.text('Noches prepagadas:'), findsOneWidget);
+    expect(find.text(r'1 / $5000'), findsOneWidget);
   });
 }
 
@@ -49,13 +59,18 @@ class _TotalsAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    final response = options.path.contains('/reportes/')
+    final response = options.path.contains('reportes/movimientos')
         ? {
             'items': [],
             'total_movimientos': 0,
             'total_recaudado': 0,
             'total_mensualidades': 2,
             'total_mensualidades_monto': 70000,
+            'total_noches': 1,
+            'total_noches_monto': 5000,
+            'total_general': 75000,
+            'total_gastos': 0,
+            'total_neto': 75000,
           }
         : options.path.endsWith('/pendiente')
         ? {
@@ -68,9 +83,11 @@ class _TotalsAdapter implements HttpClientAdapter {
             'total_banos_monto': 0,
             'total_mensualidades': 2,
             'total_mensualidades_monto': 70000,
-            'total_general': 71000,
+            'total_noches': 1,
+            'total_noches_monto': 5000,
+            'total_general': 76000,
             'total_gastos': 0,
-            'total_neto': 71000,
+            'total_neto': 76000,
           }
         : {'items': []};
     return ResponseBody.fromString(

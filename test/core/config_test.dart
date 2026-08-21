@@ -10,22 +10,46 @@ void main() {
     FlutterSecureStorage.setMockInitialValues({});
   });
 
-  test('does not fall back to a development LAN IP when no server is saved', () async {
-    final config = AppConfig(store: SecureStore());
+  test(
+    'does not fall back to a development LAN IP when no server is saved',
+    () async {
+      final config = AppConfig(store: SecureStore());
 
-    final baseUrl = await config.getApiBaseUrl();
+      final baseUrl = await config.getApiBaseUrl();
 
-    expect(baseUrl, isEmpty);
-    expect(AppConfig.defaultApiBaseUrl, isEmpty);
-    expect(baseUrl, isNot(contains('192.168.')));
-  });
+      expect(baseUrl, isEmpty);
+      expect(AppConfig.defaultApiBaseUrl, isEmpty);
+      expect(baseUrl, isNot(contains('192.168.')));
+    },
+  );
 
-  test('keeps a saved QR or manual server URL as the active base URL', () async {
-    final config = AppConfig(store: SecureStore());
-    const savedUrl = 'http://10.10.0.25:8000/api/v1';
+  test(
+    'keeps a saved QR or manual server URL as the active base URL',
+    () async {
+      final config = AppConfig(store: SecureStore());
+      const savedUrl = 'http://10.10.0.25:8000/api/v1';
 
-    await config.setApiBaseUrl(savedUrl);
+      await config.setApiBaseUrl(savedUrl);
 
-    expect(await config.getApiBaseUrl(), savedUrl);
-  });
+      expect(await config.getApiBaseUrl(), savedUrl);
+    },
+  );
+
+  test(
+    'keeps mobile local printing disabled when no preference is saved',
+    () async {
+      expect(await SecureStore().readMobileLocalPrintingEnabled(), isFalse);
+    },
+  );
+
+  test(
+    'persists the mobile local printing preference on this device',
+    () async {
+      final store = SecureStore();
+
+      await store.saveMobileLocalPrintingEnabled(true);
+
+      expect(await store.readMobileLocalPrintingEnabled(), isTrue);
+    },
+  );
 }

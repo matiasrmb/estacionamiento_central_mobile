@@ -53,6 +53,7 @@ class TicketFormatter {
       detalle: preview['detalle'],
       montoEstacionamiento: preview['monto_estacionamiento'],
       totalLavados: preview['total_lavados'],
+      nochesPrepagadas: preview['noches_prepagadas'],
     );
   }
 
@@ -65,6 +66,7 @@ class TicketFormatter {
     required dynamic detalle,
     required dynamic montoEstacionamiento,
     required dynamic totalLavados,
+    dynamic nochesPrepagadas,
   }) {
     final horaIngresoFmt = _formatDateTime(horaIngreso);
     final horaSalidaFmt = _formatDateTime(horaSalida);
@@ -86,8 +88,13 @@ class TicketFormatter {
       if (estacionamientoText.isNotEmpty)
         'ESTACIONAMIENTO: \$$estacionamientoText',
       if (lavadosValue > 0) 'LAVADOS: \$$lavadosValue',
+      for (final noche in nochesPrepagadas is List ? nochesPrepagadas : const [])
+        if (noche is Map) ...[
+          'NOCHES YA PAGADAS: \$${noche['monto_snapshot'] ?? ''}',
+          'HORARIO NOCHES: ${noche['hora_inicio_snapshot'] ?? ''} A ${noche['hora_fin_snapshot'] ?? ''}',
+        ],
       _separator,
-      'TOTAL: \$${monto ?? ''}',
+      'A COBRAR AHORA: \$${monto ?? ''}',
       _separator,
       'Gracias por su visita.',
       ..._bottomMargin,
@@ -126,6 +133,7 @@ class TicketFormatter {
       detalle: confirm['detalle'],
       montoEstacionamiento: confirm['monto_estacionamiento'],
       totalLavados: confirm['total_lavados'],
+      nochesPrepagadas: confirm['noches_prepagadas'],
     );
   }
 }

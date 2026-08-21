@@ -140,6 +140,12 @@ class OperacionesApi {
     );
   }
 
+  Future<void> marcarEnEspera({required int idIngreso}) async {
+    await _send(
+      () => client.dio.post('/ingresos/$idIngreso/marcar-espera'),
+    );
+  }
+
   Future<void> _send(Future<Response<dynamic>> Function() request) async {
     try {
       await request();
