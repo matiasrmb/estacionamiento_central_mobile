@@ -326,17 +326,26 @@ class _GastosAdminScreenState extends State<GastosAdminScreen> {
                       ),
                       isThreeLine: true,
                       trailing: _isAdmin
-                          ? Wrap(
-                              children: [
-                                IconButton(
-                                  tooltip: 'Editar gasto',
-                                  onPressed: () => _edit(item),
-                                  icon: const Icon(Icons.edit),
+                          ? PopupMenuButton<String>(
+                              tooltip: 'Acciones del gasto',
+                              onSelected: (value) {
+                                if (value == 'edit') _edit(item);
+                                if (value == 'delete') _delete(item);
+                              },
+                              itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                  value: 'edit',
+                                  child: ListTile(
+                                    leading: Icon(Icons.edit),
+                                    title: Text('Editar gasto'),
+                                  ),
                                 ),
-                                IconButton(
-                                  tooltip: 'Eliminar gasto',
-                                  onPressed: () => _delete(item),
-                                  icon: const Icon(Icons.delete),
+                                PopupMenuItem(
+                                  value: 'delete',
+                                  child: ListTile(
+                                    leading: Icon(Icons.delete),
+                                    title: Text('Eliminar gasto'),
+                                  ),
                                 ),
                               ],
                             )

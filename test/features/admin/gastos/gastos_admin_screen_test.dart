@@ -98,11 +98,10 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Confirmar'));
     await tester.pumpAndSettle();
 
-    expect(adapter.requestCount, 3);
-    expect(find.text('Gasto registrado.'), findsOneWidget);
-    expect(find.byIcon(Icons.edit), findsOneWidget);
-    expect(find.byIcon(Icons.delete), findsOneWidget);
-  });
+      expect(adapter.requestCount, 3);
+      expect(find.text('Gasto registrado.'), findsOneWidget);
+      expect(find.byType(PopupMenuButton<String>), findsOneWidget);
+    });
 }
 
 class _CountingAdapter implements HttpClientAdapter {
