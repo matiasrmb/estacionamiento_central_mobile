@@ -52,7 +52,14 @@ void main() {
       await tester.tap(submitButton);
       await tester.pumpAndSettle();
 
+      expect(find.text('Confirmar gasto'), findsOneWidget);
+      expect(adapter.requestCount, 1);
+      await tester.tap(find.widgetWithText(FilledButton, 'Confirmar'));
+      await tester.pumpAndSettle();
+
       expect(adapter.requestCount, 3);
+      expect(find.byIcon(Icons.edit), findsNothing);
+      expect(find.byIcon(Icons.delete), findsNothing);
     },
   );
 
@@ -86,11 +93,15 @@ void main() {
     await tester.tap(submitButton);
     await tester.pumpAndSettle();
 
-    expect(adapter.requestCount, 3);
-    expect(find.text('Gasto registrado.'), findsOneWidget);
-    expect(find.text('Agua'), findsNothing);
-    expect(find.text('250'), findsNothing);
-  });
+    expect(find.text('Confirmar gasto'), findsOneWidget);
+    expect(adapter.requestCount, 1);
+    await tester.tap(find.widgetWithText(FilledButton, 'Confirmar'));
+    await tester.pumpAndSettle();
+
+      expect(adapter.requestCount, 3);
+      expect(find.text('Gasto registrado.'), findsOneWidget);
+      expect(find.byType(PopupMenuButton<String>), findsOneWidget);
+    });
 }
 
 class _CountingAdapter implements HttpClientAdapter {
@@ -104,7 +115,19 @@ class _CountingAdapter implements HttpClientAdapter {
   ) async {
     requestCount++;
     final response = options.method == 'GET'
-        ? {'items': <Map<String, dynamic>>[], 'total_gastos': 0}
+        ? {
+            'items': [
+              {
+                'id_gasto': 7,
+                'fecha_hora': '2026-07-29T10:30:00',
+                'categoria': 'Insumos',
+                'descripcion': 'Agua',
+                'monto': 250,
+                'usuario': 'operador',
+              },
+            ],
+            'total_gastos': 250,
+          }
         : {'id_gasto': 1};
     return ResponseBody.fromString(
       jsonEncode(response),

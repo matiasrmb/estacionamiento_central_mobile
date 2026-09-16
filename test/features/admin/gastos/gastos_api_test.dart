@@ -24,6 +24,13 @@ void main() {
 
     final pending = await api.listarPendientes();
     await api.crear(categoria: 'Insumos', descripcion: 'Agua', monto: 250);
+    await api.editar(
+      idGasto: 7,
+      categoria: 'Servicios',
+      descripcion: 'Luz',
+      monto: 500,
+    );
+    await api.eliminar(idGasto: 7);
 
     expect(pending['total_gastos'], 250);
     expect(
@@ -37,7 +44,19 @@ void main() {
       'categoria': 'Insumos',
       'descripcion': 'Agua',
       'monto': 250,
+      'confirmado': true,
     });
+    expect(adapter.requests[2].uri.path, '/api/v1/gastos/7');
+    expect(adapter.requests[2].method, 'PATCH');
+    expect(adapter.bodies[2], {
+      'categoria': 'Servicios',
+      'descripcion': 'Luz',
+      'monto': 500,
+      'confirmado': true,
+    });
+    expect(adapter.requests[3].uri.path, '/api/v1/gastos/7');
+    expect(adapter.requests[3].method, 'DELETE');
+    expect(adapter.bodies[3], {'confirmado': true});
   });
 }
 

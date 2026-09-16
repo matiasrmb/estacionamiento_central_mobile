@@ -33,8 +33,38 @@ class GastosApi {
           'categoria': categoria,
           'descripcion': descripcion,
           'monto': monto,
+          'confirmado': true,
         },
       );
+    } on DioException catch (e) {
+      throw ApiErrorMapper.fromDio(e);
+    }
+  }
+
+  Future<void> editar({
+    required int idGasto,
+    required String categoria,
+    required String descripcion,
+    required int monto,
+  }) async {
+    try {
+      await client.dio.patch(
+        '/gastos/$idGasto',
+        data: {
+          'categoria': categoria,
+          'descripcion': descripcion,
+          'monto': monto,
+          'confirmado': true,
+        },
+      );
+    } on DioException catch (e) {
+      throw ApiErrorMapper.fromDio(e);
+    }
+  }
+
+  Future<void> eliminar({required int idGasto}) async {
+    try {
+      await client.dio.delete('/gastos/$idGasto', data: {'confirmado': true});
     } on DioException catch (e) {
       throw ApiErrorMapper.fromDio(e);
     }
