@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:estacionamiento_central_mobile/core/app_services.dart';
+import 'package:estacionamiento_central_mobile/core/storage.dart';
 import 'package:estacionamiento_central_mobile/features/admin/cierres/presentation/cierres_admin_screen.dart';
 import 'package:estacionamiento_central_mobile/features/admin/reportes/presentation/reportes_admin_screen.dart';
 import 'package:flutter/material.dart';
@@ -14,27 +15,26 @@ void main() {
 
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 
-  testWidgets('shows monthly and prepaid night totals in reports when returned by the API', (
-    tester,
-  ) async {
-    await AppServices.I.init();
-    AppServices.I.client.dio.httpClientAdapter = _TotalsAdapter();
+  testWidgets(
+    'shows monthly totals in the reporting dashboard when returned by the API',
+    (tester) async {
+      await AppServices.I.init();
+      await SecureStore().saveSession(
+        token: 'admin-token',
+        user: 'admin',
+        role: 'admin',
+      );
+      AppServices.I.client.dio.httpClientAdapter = _TotalsAdapter();
 
-    await tester.pumpWidget(const MaterialApp(home: ReportesAdminScreen()));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(const MaterialApp(home: ReportesAdminScreen()));
+      await tester.pumpAndSettle();
 
-    expect(find.text('Mensualidades'), findsOneWidget);
-    expect(find.text('2 pagos registrados'), findsOneWidget);
-    expect(find.text(r'$70000'), findsOneWidget);
-    await tester.scrollUntilVisible(
-      find.text('Noches prepagadas'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    expect(find.text('Noches prepagadas'), findsOneWidget);
-    expect(find.text('1 cobros registrados'), findsOneWidget);
-    expect(find.text(r'$5000'), findsOneWidget);
-  });
+      expect(find.text('Mensualidades comerciales'), findsOneWidget);
+      expect(find.text(r'$70000'), findsOneWidget);
+      expect(find.text('Neto operacional'), findsOneWidget);
+      expect(find.text(r'$75000'), findsOneWidget);
+    },
+  );
 
   testWidgets('shows monthly totals in the pending close when provided', (
     tester,
@@ -59,18 +59,31 @@ class _TotalsAdapter implements HttpClientAdapter {
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
-    final response = options.path.contains('reportes/movimientos')
+    final response = options.path.endsWith('/metric-catalog')
         ? {
-            'items': [],
-            'total_movimientos': 0,
-            'total_recaudado': 0,
-            'total_mensualidades': 2,
-            'total_mensualidades_monto': 70000,
-            'total_noches': 1,
-            'total_noches_monto': 5000,
-            'total_general': 75000,
-            'total_gastos': 0,
-            'total_neto': 75000,
+            'version': '2026-09-29',
+            'metrics': [
+              {'name': 'operational_income_total', 'sign': 'positive'},
+              {
+                'name': 'operational_expense_total',
+                'sign': 'positive_expense_negative_result',
+              },
+              {'name': 'operational_net_total', 'sign': 'signed'},
+              {'name': 'mensualidad_sales_total', 'sign': 'positive'},
+              {'name': 'vehicle_movement_count', 'sign': 'count'},
+            ],
+          }
+        : options.path.endsWith('/dashboard')
+        ? {
+            'period': {'id': 'open:1', 'state': 'open'},
+            'catalog_version': '2026-09-29',
+            'metrics': {
+              'operational_income_total': 76000,
+              'operational_expense_total': 0,
+              'operational_net_total': 75000,
+              'mensualidad_sales_total': 70000,
+              'vehicle_movement_count': 0,
+            },
           }
         : options.path.endsWith('/pendiente')
         ? {

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/app_services.dart';
+import '../../../../core/roles.dart';
+import '../../../../core/storage.dart';
 import '../data/reportes_api.dart';
 
 class ReportesAdminScreen extends StatefulWidget {
@@ -13,49 +15,41 @@ class ReportesAdminScreen extends StatefulWidget {
 
 class _ReportesAdminScreenState extends State<ReportesAdminScreen> {
   late final ReportesApi _api;
-  final _patenteCtrl = TextEditingController();
 
-  bool _loading = false;
+  bool _loading = true;
+  bool _isAdmin = false;
   String? _error;
-  DateTime _desde = DateTime.now();
-  DateTime _hasta = DateTime.now();
-  Map<String, dynamic>? _reporte;
-  List<Map<String, dynamic>> _items = [];
+  ReportingDashboard? _dashboard;
 
   @override
   void initState() {
     super.initState();
     _api = ReportesApi(AppServices.I.client);
-    _buscar();
+    _load();
   }
 
-  @override
-  void dispose() {
-    _patenteCtrl.dispose();
-    super.dispose();
-  }
+  Future<void> _load() async {
+    final role = await SecureStore().readRole() ?? '';
+    if (!mounted) return;
 
-  Future<void> _buscar() async {
+    if (!AppRoles.isAdmin(role)) {
+      setState(() {
+        _isAdmin = false;
+        _loading = false;
+      });
+      return;
+    }
+
     setState(() {
+      _isAdmin = true;
       _loading = true;
       _error = null;
     });
+
     try {
-      final reporte = await _api.movimientos(
-        fechaInicio: _desde,
-        fechaFin: _hasta,
-        patente: _patenteCtrl.text,
-      );
-      final rawItems = reporte['items'];
+      final dashboard = await _api.dashboard();
       if (!mounted) return;
-      setState(() {
-        _reporte = reporte;
-        _items = rawItems is List
-            ? List<Map<String, dynamic>>.from(
-                rawItems.map((item) => Map<String, dynamic>.from(item as Map)),
-              )
-            : [];
-      });
+      setState(() => _dashboard = dashboard);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = 'No se pudo cargar el reporte: $e');
@@ -64,237 +58,67 @@ class _ReportesAdminScreenState extends State<ReportesAdminScreen> {
     }
   }
 
-  Future<void> _pickDesde() async {
-    final selected = await showDatePicker(
-      context: context,
-      initialDate: _desde,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
-    );
-    if (selected == null) return;
-    setState(() {
-      _desde = selected;
-      if (_hasta.isBefore(_desde)) _hasta = selected;
-    });
-  }
-
-  Future<void> _pickHasta() async {
-    final selected = await showDatePicker(
-      context: context,
-      initialDate: _hasta,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1)),
-    );
-    if (selected == null) return;
-    setState(() => _hasta = selected);
-  }
-
-  void _limpiar() {
-    _patenteCtrl.clear();
-    setState(() {
-      _desde = DateTime.now();
-      _hasta = DateTime.now();
-    });
-    _buscar();
-  }
-
   @override
   Widget build(BuildContext context) {
-    final reporte = _reporte;
+    final dashboard = _dashboard;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reportes'),
+        title: const Text('Reportes administrativos'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/home'),
         ),
         actions: [
-          IconButton(onPressed: _buscar, icon: const Icon(Icons.refresh)),
+          IconButton(
+            onPressed: _loading || !_isAdmin ? null : _load,
+            icon: const Icon(Icons.refresh),
+          ),
         ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text('Filtros', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _pickDesde,
-                          icon: const Icon(Icons.calendar_today),
-                          label: Text('Desde ${_date(_desde)}'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _pickHasta,
-                          icon: const Icon(Icons.calendar_today),
-                          label: Text('Hasta ${_date(_hasta)}'),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _patenteCtrl,
-                    textCapitalization: TextCapitalization.characters,
-                    decoration: const InputDecoration(
-                      labelText: 'Patente opcional',
-                    ),
-                    onSubmitted: (_) => _buscar(),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: _loading ? null : _limpiar,
-                          child: const Text('Limpiar'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: _loading ? null : _buscar,
-                          icon: _loading
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(Icons.search),
-                          label: const Text('Buscar'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+          const Text('Versión ${ReportingDashboard.appVersionLabel}'),
+          const SizedBox(height: 12),
+          if (!_isAdmin && !_loading) ...[
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Solo administradores pueden ver reportes financieros.',
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          if (_error != null) ...[
+          ] else if (_loading) ...[
+            const Center(child: CircularProgressIndicator()),
+          ] else if (_error != null) ...[
             Text(_error!, style: const TextStyle(color: Colors.red)),
+          ] else if (dashboard != null) ...[
+            Text('Catálogo ${dashboard.catalogVersion}'),
+            Text('Jornada operacional ${_stateLabel(dashboard.periodState)}'),
             const SizedBox(height: 12),
-          ],
-          if (reporte != null) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: _SummaryCard(
-                    title: 'Movimientos',
-                    value: '${reporte['total_movimientos'] ?? 0}',
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _SummaryCard(
-                    title: 'Total bruto',
-                    value: _money(reporte['total_general']),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            _SummaryCard(
-              title: 'Neto',
-              value: _money(reporte['total_neto']),
-            ),
-            if ((reporte['total_gastos'] ?? 0) != 0) ...[
-              const SizedBox(height: 8),
+            for (final card in dashboard.cards) ...[
               _SummaryCard(
-                title: 'Gastos',
-                value: _money(reporte['total_gastos']),
+                title: card.label,
+                value: card.metric == 'vehicle_movement_count'
+                    ? '${card.value.toInt()}'
+                    : _money(card.value),
               ),
-            ],
-            const SizedBox(height: 16),
-            if (reporte.containsKey('total_mensualidades')) ...[
-              Card(
-                child: ListTile(
-                  title: const Text('Mensualidades'),
-                  subtitle: Text(
-                    '${reporte['total_mensualidades'] ?? 0} pagos registrados',
-                  ),
-                  trailing: Text(
-                    _money(reporte['total_mensualidades_monto']),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-            if (reporte.containsKey('total_noches')) ...[
-              Card(
-                child: ListTile(
-                  title: const Text('Noches prepagadas'),
-                  subtitle: Text(
-                    '${reporte['total_noches'] ?? 0} cobros registrados',
-                  ),
-                  trailing: Text(
-                    _money(reporte['total_noches_monto']),
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 8),
             ],
           ],
-          Text('Movimientos', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 8),
-          if (_items.isEmpty && !_loading)
-            const Text('No hay movimientos para esos filtros.'),
-          for (final item in _items)
-            Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: ListTile(
-                leading: Icon(
-                  item['tipo'] == 'bano'
-                      ? Icons.wc
-                      : item['tipo'] == 'noche'
-                      ? Icons.nightlight_round
-                      : item['tipo'] == 'lavado_solo'
-                      ? Icons.local_car_wash
-                      : item['tipo'] == 'gasto'
-                      ? Icons.receipt_long
-                      : Icons.directions_car,
-                ),
-                title: Text(
-                  '${item['patente'] ?? ''} • ${_money(item['tarifa_aplicada'])}',
-                ),
-                subtitle: Text(
-                  '${_text(item['fecha_hora_ingreso'])} → ${_text(item['fecha_hora_salida'])}\n'
-                  'Minutos: ${item['minutos'] ?? 0}',
-                ),
-                isThreeLine: true,
-              ),
-            ),
         ],
       ),
     );
   }
 
-  String _date(DateTime value) {
-    final year = value.year.toString().padLeft(4, '0');
-    final month = value.month.toString().padLeft(2, '0');
-    final day = value.day.toString().padLeft(2, '0');
-    return '$year-$month-$day';
-  }
+  String _stateLabel(String state) => switch (state) {
+    'open' => 'abierta',
+    'closed' => 'cerrada',
+    _ => state,
+  };
 
-  String _money(dynamic value) {
-    final n = value is num ? value.toInt() : int.tryParse('${value ?? 0}') ?? 0;
-    return '\$${n.toString()}';
-  }
-
-  String _text(dynamic value) => value == null ? '-' : '$value';
+  String _money(num value) => '\$${value.toInt()}';
 }
 
 class _SummaryCard extends StatelessWidget {
