@@ -106,6 +106,8 @@ class _ReportesAdminScreenState extends State<ReportesAdminScreen> {
               ),
               const SizedBox(height: 8),
             ],
+            const SizedBox(height: 4),
+            const _DeferredReportingNotice(),
           ],
         ],
       ),
@@ -119,6 +121,22 @@ class _ReportesAdminScreenState extends State<ReportesAdminScreen> {
   };
 
   String _money(num value) => '\$${value.toInt()}';
+}
+
+class _DeferredReportingNotice extends StatelessWidget {
+  const _DeferredReportingNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Card(
+      child: Padding(
+        padding: EdgeInsets.all(14),
+        child: Text(
+          'Los reportes cerrados y las exportaciones estarán disponibles en una versión 1.3.x posterior.',
+        ),
+      ),
+    );
+  }
 }
 
 class _SummaryCard extends StatelessWidget {

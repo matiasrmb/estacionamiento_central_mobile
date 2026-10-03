@@ -24,7 +24,8 @@ void main() {
         user: 'admin',
         role: 'admin',
       );
-      AppServices.I.client.dio.httpClientAdapter = _TotalsAdapter();
+      final adapter = _TotalsAdapter();
+      AppServices.I.client.dio.httpClientAdapter = adapter;
 
       await tester.pumpWidget(const MaterialApp(home: ReportesAdminScreen()));
       await tester.pumpAndSettle();
@@ -33,6 +34,101 @@ void main() {
       expect(find.text(r'$70000'), findsOneWidget);
       expect(find.text('Neto operacional'), findsOneWidget);
       expect(find.text(r'$75000'), findsOneWidget);
+      await tester.drag(find.byType(ListView), const Offset(0, -500));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Los reportes cerrados y las exportaciones estarán disponibles en una versión 1.3.x posterior.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Fecha inicio'), findsNothing);
+      expect(find.text('Fecha fin'), findsNothing);
+      expect(find.widgetWithText(TextButton, 'Exportar'), findsNothing);
+      expect(find.widgetWithText(ElevatedButton, 'Exportar'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Exportar'), findsNothing);
+      expect(find.widgetWithText(TextButton, 'Descargar'), findsNothing);
+      expect(find.widgetWithText(ElevatedButton, 'Descargar'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Descargar'), findsNothing);
+      expect(
+        adapter.requestedPaths,
+        equals(['/reporting/metric-catalog', '/reporting/dashboard']),
+      );
+    },
+  );
+
+  testWidgets(
+    'keeps closed dashboard state deferred without report retrieval flows',
+    (tester) async {
+      await AppServices.I.init();
+      await SecureStore().saveSession(
+        token: 'admin-token',
+        user: 'admin',
+        role: 'admin',
+      );
+      final adapter = _TotalsAdapter(periodState: 'closed');
+      AppServices.I.client.dio.httpClientAdapter = adapter;
+
+      await tester.pumpWidget(const MaterialApp(home: ReportesAdminScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Jornada operacional cerrada'), findsOneWidget);
+      await tester.drag(find.byType(ListView), const Offset(0, -500));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Los reportes cerrados y las exportaciones estarán disponibles en una versión 1.3.x posterior.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Reporte cerrado'), findsNothing);
+      expect(find.text('Reportes cerrados'), findsNothing);
+      expect(
+        find.widgetWithText(TextButton, 'Ver reporte cerrado'),
+        findsNothing,
+      );
+      expect(
+        find.widgetWithText(ElevatedButton, 'Ver reporte cerrado'),
+        findsNothing,
+      );
+      expect(
+        find.widgetWithText(OutlinedButton, 'Ver reporte cerrado'),
+        findsNothing,
+      );
+      expect(
+        adapter.requestedPaths,
+        equals(['/reporting/metric-catalog', '/reporting/dashboard']),
+      );
+    },
+  );
+
+  testWidgets(
+    'ignores closed report and export metadata from dashboard payloads',
+    (tester) async {
+      await AppServices.I.init();
+      await SecureStore().saveSession(
+        token: 'admin-token',
+        user: 'admin',
+        role: 'admin',
+      );
+      AppServices.I.client.dio.httpClientAdapter = _TotalsAdapter(
+        includeOutOfScopeFields: true,
+      );
+
+      await tester.pumpWidget(const MaterialApp(home: ReportesAdminScreen()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Mensualidades comerciales'), findsOneWidget);
+      expect(find.text('closed-report-available'), findsNothing);
+      expect(find.text('csv'), findsNothing);
+      expect(find.text('pdf'), findsNothing);
+      expect(find.text('xlsx'), findsNothing);
+      expect(find.widgetWithText(TextButton, 'CSV'), findsNothing);
+      expect(find.widgetWithText(ElevatedButton, 'CSV'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'CSV'), findsNothing);
+      expect(find.widgetWithText(TextButton, 'PDF'), findsNothing);
+      expect(find.widgetWithText(ElevatedButton, 'PDF'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'PDF'), findsNothing);
     },
   );
 
@@ -53,12 +149,42 @@ void main() {
 }
 
 class _TotalsAdapter implements HttpClientAdapter {
+  final String periodState;
+  final bool includeOutOfScopeFields;
+  final List<String> requestedPaths;
+
+  _TotalsAdapter({
+    this.periodState = 'open',
+    this.includeOutOfScopeFields = false,
+  }) : requestedPaths = <String>[];
+
   @override
   Future<ResponseBody> fetch(
     RequestOptions options,
     Stream<Uint8List>? requestStream,
     Future<void>? cancelFuture,
   ) async {
+    requestedPaths.add(options.path);
+    final dashboard = {
+      'period': {'id': 'open:1', 'state': periodState},
+      'catalog_version': '2026-09-29',
+      'metrics': {
+        'operational_income_total': 76000,
+        'operational_expense_total': 0,
+        'operational_net_total': 75000,
+        'mensualidad_sales_total': 70000,
+        'vehicle_movement_count': 0,
+      },
+      if (includeOutOfScopeFields) ...{
+        'closed_reports': [
+          {'label': 'closed-report-available', 'download_url': '/reports/1'},
+        ],
+        'exports': {
+          'formats': ['csv', 'pdf', 'xlsx'],
+        },
+        'download': {'enabled': true},
+      },
+    };
     final response = options.path.endsWith('/metric-catalog')
         ? {
             'version': '2026-09-29',
@@ -74,17 +200,7 @@ class _TotalsAdapter implements HttpClientAdapter {
             ],
           }
         : options.path.endsWith('/dashboard')
-        ? {
-            'period': {'id': 'open:1', 'state': 'open'},
-            'catalog_version': '2026-09-29',
-            'metrics': {
-              'operational_income_total': 76000,
-              'operational_expense_total': 0,
-              'operational_net_total': 75000,
-              'mensualidad_sales_total': 70000,
-              'vehicle_movement_count': 0,
-            },
-          }
+        ? dashboard
         : options.path.endsWith('/pendiente')
         ? {
             'hay_pendiente': true,
