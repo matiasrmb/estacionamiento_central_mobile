@@ -1,0 +1,49 @@
+project: estacionamiento_central_mobile
+context:
+  - Flutter mobile client for Estacionamiento Central.
+  - Dart SDK constraint: ^3.11.0.
+  - Flutter tool detected: 3.41.2 stable, Dart 3.11.0.
+  - Source layout uses lib/core, lib/features, and lib/ui.
+  - Tests live under test/ and use flutter_test.
+  - No workspace-wide test command was found beyond this Flutter project root.
+strict_tdd: false
+strict_tdd_reason: No explicit workspace-level test command was found; project-local commands are preserved below.
+persistence:
+  mode: hybrid
+  stores:
+    - openspec
+    - engram
+phase_rules:
+  proposal: Define intent, scope, and risks before implementation.
+  spec: Write observable requirements and scenarios before design.
+  design: Document architecture, data flow, and tradeoffs before tasks.
+  tasks: Keep implementation tasks small enough for the 400-line review policy.
+  apply: Implement only approved tasks; do not expand product scope.
+  verify: Run available checks and record unavailable commands explicitly.
+  archive: Sync accepted deltas back into durable specs.
+review_policy:
+  max_changed_lines_per_pr: 400
+delivery_strategy: ask-on-risk
+testing:
+  detected: 2026-10-02
+  strict_tdd: false
+  projects:
+    - relative_path: .
+      stack: Flutter app, Dart 3.11.0
+      test_command: flutter test
+      test_command_status: blocked locally on 2026-10-02 by insufficient disk space in the Windows temp directory; command timed out after 120s
+      framework: flutter_test
+      coverage_command: flutter test --coverage
+      linter_command: flutter analyze
+      type_checker_command: flutter analyze
+      formatter_command: dart format .
+      layers:
+        unit:
+          available: true
+          tool: flutter_test
+        integration:
+          available: true
+          tool: flutter_test widget/API-facing tests with mocked clients
+        e2e:
+          available: false
+          tool: null
