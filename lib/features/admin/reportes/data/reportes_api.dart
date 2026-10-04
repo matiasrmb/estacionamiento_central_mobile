@@ -79,7 +79,7 @@ class ReportingDashboard {
     Map<String, dynamic> catalog,
     Map<String, dynamic> dashboard,
   ) {
-    final metrics = Map<String, dynamic>.from(dashboard['metrics'] as Map);
+    final metrics = _stringMap(dashboard['metrics']);
     final catalogMetrics = catalog['metrics'] is List
         ? List<Map<String, dynamic>>.from(
             (catalog['metrics'] as List).map(
@@ -102,10 +102,14 @@ class ReportingDashboard {
     return ReportingDashboard(
       catalogVersion:
           '${catalog['version'] ?? dashboard['catalog_version'] ?? '-'}',
-      periodState:
-          '${Map<String, dynamic>.from(dashboard['period'] as Map)['state'] ?? '-'}',
+      periodState: '${_stringMap(dashboard['period'])['state'] ?? '-'}',
       cards: cards,
     );
+  }
+
+  static Map<String, dynamic> _stringMap(dynamic value) {
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return const <String, dynamic>{};
   }
 
   static num _num(dynamic value) {
