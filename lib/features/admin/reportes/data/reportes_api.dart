@@ -87,15 +87,18 @@ class ReportingDashboard {
             ),
           )
         : <Map<String, dynamic>>[];
+    final catalogByName = {
+      for (final metric in catalogMetrics) '${metric['name']}': metric,
+    };
 
     final cards = <ReportingMetricCard>[
-      for (final metric in catalogMetrics)
-        if (_metricLabels.containsKey(metric['name']))
+      for (final metricName in _metricLabels.keys)
+        if (catalogByName.containsKey(metricName))
           ReportingMetricCard(
-            metric: '${metric['name']}',
-            label: _metricLabels['${metric['name']}']!,
-            value: _num(metrics[metric['name']]),
-            sign: '${metric['sign'] ?? ''}',
+            metric: metricName,
+            label: _metricLabels[metricName]!,
+            value: _num(metrics[metricName]),
+            sign: '${catalogByName[metricName]?['sign'] ?? ''}',
           ),
     ];
 
