@@ -44,6 +44,15 @@ void main() {
       );
       expect(find.text('Fecha inicio'), findsNothing);
       expect(find.text('Fecha fin'), findsNothing);
+      expect(find.text('Filtrar'), findsNothing);
+      expect(find.text('Ordenar'), findsNothing);
+      expect(find.text('Página'), findsNothing);
+      expect(find.widgetWithText(TextButton, 'Anterior'), findsNothing);
+      expect(find.widgetWithText(ElevatedButton, 'Anterior'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Anterior'), findsNothing);
+      expect(find.widgetWithText(TextButton, 'Siguiente'), findsNothing);
+      expect(find.widgetWithText(ElevatedButton, 'Siguiente'), findsNothing);
+      expect(find.widgetWithText(OutlinedButton, 'Siguiente'), findsNothing);
       expect(find.widgetWithText(TextButton, 'Exportar'), findsNothing);
       expect(find.widgetWithText(ElevatedButton, 'Exportar'), findsNothing);
       expect(find.widgetWithText(OutlinedButton, 'Exportar'), findsNothing);

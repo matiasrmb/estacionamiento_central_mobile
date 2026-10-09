@@ -16,7 +16,7 @@ void main() {
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 
   test(
-    'client fetches canonical reporting dashboard and 1.3.0 catalog labels',
+    'client fetches canonical reporting dashboard cards in fixed mobile order',
     () async {
       await AppServices.I.init();
       final adapter = _ReportingAdapter();
@@ -39,11 +39,11 @@ void main() {
         'Movimientos de vehículos',
       ]);
       expect(dashboard.cards.map((card) => card.value), <num>[
-        2500,
-        300,
-        2200,
-        70000,
-        12,
+        1111,
+        222,
+        -333,
+        4444,
+        55,
       ]);
     },
   );
@@ -92,9 +92,11 @@ void main() {
     expect(find.text('Catálogo 2026-09-29'), findsOneWidget);
     expect(find.text('Jornada operacional abierta'), findsOneWidget);
     expect(find.text('Ingresos operacionales'), findsOneWidget);
-    expect(find.text(r'$2500'), findsOneWidget);
+    expect(find.text(r'$1111'), findsOneWidget);
     expect(find.text('Neto operacional'), findsOneWidget);
-    expect(find.text(r'$2200'), findsOneWidget);
+    expect(find.text(r'$-333'), findsOneWidget);
+    expect(find.text('Movimientos de vehículos'), findsOneWidget);
+    expect(find.text('55'), findsOneWidget);
   });
 }
 
@@ -111,7 +113,10 @@ class _ReportingAdapter implements HttpClientAdapter {
     final response = switch (options.path) {
       '/reporting/metric-catalog' => _metricCatalog,
       '/reporting/dashboard' => _dashboard,
-      _ => <String, Object?>{},
+      '/reportes/movimientos' => throw StateError(
+        'Quick consultation must not request legacy movimientos reports.',
+      ),
+      _ => throw StateError('Unexpected reporting request: ${options.path}'),
     };
 
     return ResponseBody.fromString(
@@ -131,14 +136,24 @@ const _metricCatalog = {
   'version': '2026-09-29',
   'metrics': [
     {
-      'name': 'operational_income_total',
-      'meaning': 'Payments collected from operational sources',
-      'sign': 'positive',
-    },
-    {
       'name': 'operational_expense_total',
       'meaning': 'Operational expenses',
       'sign': 'positive_expense_negative_result',
+    },
+    {
+      'name': 'non_canonical_metric',
+      'meaning': 'Metric outside the mobile quick-consultation contract',
+      'sign': 'positive',
+    },
+    {
+      'name': 'vehicle_movement_count',
+      'meaning': 'Vehicle entries/exits in the period',
+      'sign': 'count',
+    },
+    {
+      'name': 'operational_income_total',
+      'meaning': 'Payments collected from operational sources',
+      'sign': 'positive',
     },
     {
       'name': 'operational_net_total',
@@ -150,11 +165,6 @@ const _metricCatalog = {
       'meaning': 'Commercial mensualidad activity',
       'sign': 'positive',
     },
-    {
-      'name': 'vehicle_movement_count',
-      'meaning': 'Vehicle entries/exits in the period',
-      'sign': 'count',
-    },
   ],
 };
 
@@ -162,10 +172,11 @@ const _dashboard = {
   'period': {'id': 'open:8', 'state': 'open'},
   'catalog_version': '2026-09-29',
   'metrics': {
-    'operational_income_total': 2500,
-    'operational_expense_total': 300,
-    'operational_net_total': 2200,
-    'mensualidad_sales_total': 70000,
-    'vehicle_movement_count': 12,
+    'operational_income_total': 1111,
+    'operational_expense_total': 222,
+    'operational_net_total': -333,
+    'mensualidad_sales_total': 4444,
+    'vehicle_movement_count': 55,
+    'non_canonical_metric': 999999,
   },
 };
